@@ -40,7 +40,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import qrscanner.CameraLens
 import qrscanner.QrScanner
 import kotlin.text.ifEmpty
@@ -71,7 +74,9 @@ fun QrScannerView(
             openImagePicker = openImagePicker,
             onCompletion = {
                 qrCodeURL = it
-                onCodeScanned(it)
+                CoroutineScope(Dispatchers.Main).launch{
+                    onCodeScanned(it)
+                }
             },
             imagePickerHandler = { openImagePicker = it },
             onFailure = {
