@@ -1,4 +1,4 @@
-package com.ruko.system.presentation.home
+package com.ruko.system.presentation.user
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,9 +34,10 @@ fun JoinQueueScreen(
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Join Queue") }) }
-    ) {
+    ) { paddingValues ->
         Column(
             modifier = Modifier
+                .padding(paddingValues)
                 .fillMaxSize()
                 .padding(24.dp),
             verticalArrangement = Arrangement.Top

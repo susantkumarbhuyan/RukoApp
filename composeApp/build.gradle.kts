@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    kotlin("plugin.serialization") version "2.2.0"
 }
 
 kotlin {
@@ -45,7 +46,11 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
 
             implementation(libs.qr.kit)
+            implementation(libs.ui.backhandler)
             implementation("org.jetbrains.androidx.navigation:navigation-compose:2.9.0-beta03")
+            implementation("com.russhwolf:multiplatform-settings:1.3.0")
+            implementation("com.russhwolf:multiplatform-settings-no-arg:1.3.0")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 
         }
         commonTest.dependencies {
