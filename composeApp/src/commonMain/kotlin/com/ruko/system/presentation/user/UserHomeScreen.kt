@@ -38,6 +38,7 @@ import com.ruko.system.utils.SessionManager
 @Composable
 fun UserHomeScreen(
     onScanClick: () -> Unit,
+    onReviews: () -> Unit,
     onLogout: () -> Unit
 ) {
     Scaffold(
@@ -115,6 +116,7 @@ fun UserHomeScreen(
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodyMedium
                     )
+
                 }
             }
 
@@ -130,6 +132,19 @@ fun UserHomeScreen(
                 Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan")
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Scan QR Code")
+            }
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Button(
+                onClick = onReviews,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan")
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Sho Reviews")
             }
         }
     }

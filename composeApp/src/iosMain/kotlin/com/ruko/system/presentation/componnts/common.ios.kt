@@ -26,3 +26,7 @@ actual fun shareQrCodeImage(image: ImageBitmap?, title: String) {
 
     rootViewController?.presentViewController(activityViewController, animated = true, completion = null)
 }
+
+@Composable
+actual fun Reply() {
+}

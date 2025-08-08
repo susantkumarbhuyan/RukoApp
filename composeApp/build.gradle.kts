@@ -31,6 +31,12 @@ kotlin {
     
     sourceSets {
         androidMain.dependencies {
+            implementation("com.fasterxml.jackson.core:jackson-core:2.19.2")
+            // Google Play API
+            implementation("com.google.auth:google-auth-library-oauth2-http:1.37.1")
+            implementation("com.google.api-client:google-api-client:1.15")
+            implementation("com.google.apis:google-api-services-androidpublisher:v3-rev142-1.25.0")
+
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
         }
@@ -72,7 +78,7 @@ android {
     }
     packaging {
         resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/{AL2.0,LGPL2.1,INDEX.LIST,DEPENDENCIES}"
         }
     }
     buildTypes {

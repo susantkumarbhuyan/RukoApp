@@ -14,6 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.ruko.system.presentation.componnts.ExitApp
+import com.ruko.system.presentation.componnts.Reply
 import com.ruko.system.presentation.data.QueueState
 import com.ruko.system.presentation.owner.LoginScreen
 import com.ruko.system.presentation.owner.OwnerHomeScreen
@@ -39,6 +40,8 @@ sealed class Screen(val route: String) {
     {
         @Serializable
         object ScanQr : Screen("user_home/scan_qr")
+        @Serializable
+        object Review : Screen("user_home/review")
 
         @Serializable
         object JoinQueue : Screen("user_home/join_queue")
@@ -130,6 +133,7 @@ fun QueueNavHost() {
             }
             UserHomeScreen(
                 onScanClick = { navController.navigate(Screen.UserHome.ScanQr.route) },
+                onReviews = { navController.navigate(Screen.UserHome.Review.route) },
                 onLogout = {
                     SessionManager.isLoggedIn = false
                     navController.navigate(Screen.Login.route) {
@@ -161,6 +165,14 @@ fun QueueNavHost() {
                     }
                 }
             )
+        }
+        composable(Screen.UserHome.Review.route) {
+            BackHandler {
+                navController.navigate(Screen.UserHome.route) {
+                    popUpTo(Screen.UserHome.route) { inclusive = true }
+                }
+            }
+            Reply()
         }
 
         composable(Screen.UserHome.ScanQr.route) {

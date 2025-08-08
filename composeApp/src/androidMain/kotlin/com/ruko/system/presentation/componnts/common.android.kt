@@ -5,13 +5,12 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.FileProvider
 import com.ruko.system.presentation.AndroidContextProvider
+import com.ruko.system.presentation.review.ReviewReplyScreen
 import java.io.File
 import java.io.FileOutputStream
 
@@ -45,4 +44,9 @@ actual fun shareQrCodeImage( image: ImageBitmap?, title: String) {
     }
 
     context.startActivity(Intent.createChooser(intent, "Share via").addFlags(FLAG_ACTIVITY_NEW_TASK))
+}
+
+@Composable
+actual fun Reply() {
+    ReviewReplyScreen(LocalContext.current)
 }
