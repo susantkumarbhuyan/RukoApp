@@ -1,15 +1,14 @@
 package com.ruko.system
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import com.ruko.system.presentation.navigation.QueueNavHost
-import com.ruko.system.presentation.ui.theme.QueueTheme
+import com.ruko.system.presentation.navigation.RootNavigation
+import com.ruko.system.presentation.ui.MainTheme
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 @Preview
 fun App() {
-    QueueTheme {
-        QueueNavHost()
+    MainTheme {
+        RootNavigation()
     }
 }

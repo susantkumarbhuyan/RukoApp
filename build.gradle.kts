@@ -6,5 +6,10 @@ plugins {
     alias(libs.plugins.composeMultiplatform) apply false
     alias(libs.plugins.composeCompiler) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
-    kotlin("plugin.serialization") version "2.2.0"
+    alias(libs.plugins.kotlinSerialization) apply false
+    alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.room) apply false
+    alias(libs.plugins.composeHotReload) apply false
+    alias(libs.plugins.kotlinCocoapods) apply false
+    id("com.google.gms.google-services") version "4.4.3" apply false
 }

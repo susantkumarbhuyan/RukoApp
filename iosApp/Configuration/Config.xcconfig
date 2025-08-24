@@ -1,5 +1,5 @@
 TEAM_ID=
-
+BUNDLE_ID=com.ruko.system
 PRODUCT_NAME=Ruko
 PRODUCT_BUNDLE_IDENTIFIER=com.ruko.system.Ruko$(TEAM_ID)
 

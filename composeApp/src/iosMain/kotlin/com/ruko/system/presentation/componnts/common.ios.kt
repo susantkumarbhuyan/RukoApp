@@ -1,7 +1,6 @@
 package com.ruko.system.presentation.componnts
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import platform.UIKit.UIActivityViewController
 import platform.UIKit.UIApplication
@@ -24,9 +23,10 @@ actual fun shareQrCodeImage(image: ImageBitmap?, title: String) {
     val window = UIApplication.sharedApplication.keyWindow
     val rootViewController = window?.rootViewController
 
-    rootViewController?.presentViewController(activityViewController, animated = true, completion = null)
+    rootViewController?.presentViewController(
+        activityViewController,
+        animated = true,
+        completion = null
+    )
 }
 
-@Composable
-actual fun Reply() {
-}

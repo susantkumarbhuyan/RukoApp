@@ -7,5 +7,3 @@ import androidx.compose.ui.graphics.ImageBitmap
 expect fun ExitApp ()
 
 expect fun shareQrCodeImage ( image: ImageBitmap?, title: String)
-@Composable
-expect fun Reply ()

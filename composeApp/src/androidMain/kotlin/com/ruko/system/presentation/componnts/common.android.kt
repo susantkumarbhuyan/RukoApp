@@ -10,7 +10,6 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
 import com.ruko.system.presentation.AndroidContextProvider
-import com.ruko.system.presentation.review.ReviewReplyScreen
 import java.io.File
 import java.io.FileOutputStream
 
@@ -44,9 +43,4 @@ actual fun shareQrCodeImage( image: ImageBitmap?, title: String) {
     }
 
     context.startActivity(Intent.createChooser(intent, "Share via").addFlags(FLAG_ACTIVITY_NEW_TASK))
-}
-
-@Composable
-actual fun Reply() {
-    ReviewReplyScreen(LocalContext.current)
 }

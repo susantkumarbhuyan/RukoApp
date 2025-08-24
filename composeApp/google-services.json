@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "386548990867",
+    "project_id": "ruko---queue-management",
+    "storage_bucket": "ruko---queue-management.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:386548990867:android:8db78d0e4c7036f0691e66",
+        "android_client_info": {
+          "package_name": "com.ruko.system"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnJSypld73OYFlYwJsX2IdlvkB7B3_aTY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

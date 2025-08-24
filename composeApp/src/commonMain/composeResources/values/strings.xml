@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sri Hindu Calendar</string>
+    <string name="share_msg">Hindu Calendar - Panjika&#10;In this app, you can get daily horoscope, tithi, calendar, zodiac compatibility, news, and more. Open the link below to install.&#10;%1$s%2$s
+</string>
+
+    <string name="bottom_nav_home">Home</string>
+    <string name="bottom_nav_profile">Profile</string>
+    <string name="bottom_nav_my_queue">History</string>
+</resources>
