@@ -4,7 +4,6 @@ package com.ruko.system.data.local.preference
 import com.ruko.system.domain.model.Owner
 import com.ruko.system.domain.model.Queue
 import com.ruko.system.domain.model.User
-import com.ruko.system.utils.SessionManager
 import kotlinx.coroutines.flow.Flow
 
 interface PreferenceManager {

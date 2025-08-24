@@ -40,7 +40,6 @@ import com.ruko.system.presentation.navigation.bottom_navigation_bar.BottomNavig
 import com.ruko.system.presentation.navigation.bottom_navigation_bar.NavigationConstants.NAVIGATION_OWNER_ITEMS
 import com.ruko.system.presentation.navigation.bottom_navigation_bar.NavigationConstants.NAVIGATION_USER_ITEMS
 import com.ruko.system.utils.KmpLog
-import com.ruko.system.utils.SessionManager
 import dev.icerock.moko.permissions.compose.BindEffect
 import dev.icerock.moko.permissions.compose.rememberPermissionsControllerFactory
 import org.koin.compose.viewmodel.koinViewModel
