@@ -28,7 +28,10 @@ class QueueRepositoryImpl(
     val firestore: FirebaseFirestore,
     val preferenceManager: PreferenceManager
 ) : QueueRepository {
+
+    // ------------------ 🔹 Properties ------------------
     private val userQueuesRef get() = database.reference("userQueues")
+
     override val currentUserId: String
         get() = auth.currentUser?.uid ?: ""
 
@@ -38,6 +41,7 @@ class QueueRepositoryImpl(
     override val currentUser: Flow<User>
         get() = auth.authStateChanged.map { it?.let { User(it.uid) } ?: User() }
 
+    // ------------------ 🔹 Auth ------------------
     private suspend fun signIn(loginState: Account): String {
         val result = auth.signInWithEmailAndPassword(loginState.email, loginState.password)
         return result.user?.uid ?: throw Exception("Authentication failed")
@@ -69,21 +73,13 @@ class QueueRepositoryImpl(
 
     override suspend fun createUserAccount(user: User): String {
         val uid = createUser(user.email, user.password)
-        // Save user data in "users" collection with document id = uid
-        firestore.collection("users")
-            .document(uid)
-            .set(user)
-
+        firestore.collection(FirestoreCollections.USERS).document(uid).set(user.copy(id = uid))
         return uid
     }
 
     override suspend fun createOwnerAccount(owner: Owner): String {
         val uid = createUser(owner.email, owner.password)
-
-        // Save owner data in "owners" collection with document id = uid
-        firestore.collection("owners")
-            .document(uid)
-            .set(owner)
+        firestore.collection(FirestoreCollections.OWNERS).document(uid).set(owner)
         return uid
     }
 
@@ -94,12 +90,10 @@ class QueueRepositoryImpl(
         auth.signOut()
     }
 
-
+    // ------------------ 🔹 Queue CRUD ------------------
     override suspend fun createQueue(queue: Queue) {
         try {
-            firestore.collection("queues")
-                .document(queue.id)
-                .set(queue)  // ✅ stores it in Firestore
+            firestore.collection(FirestoreCollections.QUEUES).document(queue.id).set(queue)
             preferenceManager.saveQueue(queue)
         } catch (e: Exception) {
             throw Exception("Failed to create queue: ${e.message}", e)
@@ -107,72 +101,41 @@ class QueueRepositoryImpl(
     }
 
     override suspend fun getQueue(queueId: String): Queue {
-        // 1️⃣ Try cache first
-        preferenceManager.getQueue(queueId)?.let { cached ->
-            return cached
-        }
+        preferenceManager.getQueue(queueId)?.let { return it }
 
-        // 2️⃣ Fetch from Firestore if not cached
-        val snapshot = firestore
-            .collection("queues")
-            .document(queueId)
-            .get()
-
-        if (!snapshot.exists) {
-            throw Exception("Queue not found: $queueId")
-        }
+        val snapshot = firestore.collection(FirestoreCollections.QUEUES).document(queueId).get()
+        if (!snapshot.exists) throw Exception("Queue not found: $queueId")
 
         val queue = snapshot.data<Queue>()
-
-        // 3️⃣ Save to cache
         preferenceManager.saveQueue(queue)
-
         return queue
     }
 
     override suspend fun getQueues(storeId: String): List<Queue> {
-        // 1️⃣ Try cached list first
-        preferenceManager.getQueues()?.takeIf { it.isNotEmpty() }?.let { cached ->
-            return cached
-        }
+        preferenceManager.getQueues()?.takeIf { it.isNotEmpty() }?.let { return it }
 
-        // 2️⃣ Fetch from Firestore
-        val snapshot = firestore
-            .collection("queues")
-            .where { "storeId" equalTo storeId }   // ✅ correct DSL
+        val snapshot = firestore.collection(FirestoreCollections.QUEUES)
+            .where { "storeId" equalTo storeId }
             .get()
 
         val queues = snapshot.documents.map { it.data<Queue>() }
-
-        // 3️⃣ Save list in cache
         preferenceManager.saveQueues(queues)
-
         return queues
     }
 
-
     override suspend fun updateQueue(queue: Queue) {
-        if (queue.id.isEmpty()) {
-            throw IllegalArgumentException("Queue id is required for update")
-        }
+        if (queue.id.isEmpty()) throw IllegalArgumentException("Queue id is required for update")
 
-        firestore.collection("queues")
-            .document(queue.id)
-            .set(queue)
-
-        // ✅ Update cache
+        firestore.collection(FirestoreCollections.QUEUES).document(queue.id).set(queue)
         preferenceManager.saveQueue(queue)
     }
 
     override suspend fun deleteQueue(queueId: String) {
-        firestore.collection("queues")
-            .document(queueId)
-            .delete()
-
-        // ✅ Remove from cache
+        firestore.collection(FirestoreCollections.QUEUES).document(queueId).delete()
         preferenceManager.deleteQueue(queueId)
     }
 
+    // ------------------ 🔹 User Queue (Realtime DB) ------------------
     @OptIn(ExperimentalTime::class)
     override suspend fun joinUserQueue(queueId: String, userId: String) {
         val userQueueId = userQueuesRef.child(queueId).push().key ?: userId
@@ -212,11 +175,10 @@ class QueueRepositoryImpl(
         return sortedQueues.indexOfFirst { it.userId == userId } + 1
     }
 
+    // ------------------ 🔹 Queue Progress ------------------
     @OptIn(ExperimentalTime::class)
     private suspend fun markNextUserStarted(queueId: String) {
         val snapshot = userQueuesRef.child(queueId).valueEvents.first()
-
-        // Get JOINED users sorted by joinedAt
         val nextUser = snapshot.children
             .map { it.value<UserQueue>() }
             .filter { it.status == UserQueueStatus.JOINED && it.startedAt == null }
@@ -229,25 +191,22 @@ class QueueRepositoryImpl(
         }
     }
 
-
     @OptIn(ExperimentalTime::class)
     override suspend fun markUserQueueCompleted(queueId: String, userQueueId: String) {
-
         val snapshot = userQueuesRef.child(queueId).child(userQueueId).valueEvents
         val userQueue = snapshot.first().value<UserQueue>()
 
         val completedAt = Clock.System.now().toEpochMilliseconds()
-        val startedAt = userQueue.startedAt ?: userQueue.joinedAt // fallback if not set
+        val startedAt = userQueue.startedAt ?: userQueue.joinedAt
         val serviceTime = completedAt - startedAt
-        userQueuesRef.child(queueId)
-            .child(userQueueId)
+
+        userQueuesRef.child(queueId).child(userQueueId)
             .updateChildren(mapOf("status" to UserQueueStatus.COMPLETED.name))
 
-        // save history
-        val historyDoc = firestore.collection("queueHistory")
-            .document(queueId)            // collection per queue
-            .collection("users")          // subcollection for each user
-            .document(userQueue.userId)   // document per user
+        val historyDoc = firestore.collection(FirestoreCollections.QUEUE_HISTORY)
+            .document(queueId)
+            .collection(FirestoreCollections.USERS)
+            .document(userQueue.userId)
 
         val history = UserQueueHistory(
             id = userQueue.id,
@@ -260,10 +219,10 @@ class QueueRepositoryImpl(
         )
 
         historyDoc.set(history)
-        // 4️⃣ Start next user
         markNextUserStarted(queueId)
     }
 
+    // ------------------ 🔹 Observers ------------------
     override fun observeUserQueue(queueId: String): Flow<List<UserQueue>> {
         return userQueuesRef.child(queueId).valueEvents
             .map { snapshot ->
@@ -281,16 +240,14 @@ class QueueRepositoryImpl(
                     .filter { it.status == UserQueueStatus.JOINED }
                     .sortedBy { it.joinedAt }
 
-                // For each UserQueue, fetch User from Firestore
                 flow {
                     val list = userQueues.map { queue ->
-                        val userSnapshot = firestore.collection("users")
+                        val userSnapshot = firestore.collection(FirestoreCollections.USERS)
                             .where { "id" equalTo queue.userId }
                             .get()
                         val queues = userSnapshot.documents.map { it.data<User>() }
                         queue to queues.first()
                     }
-
                     emit(list)
                 }
             }
@@ -307,19 +264,21 @@ class QueueRepositoryImpl(
             }
     }
 
+    // ------------------ 🔹 Stats ------------------
     override suspend fun getAverageServiceTime(queueId: String): Long {
-        val snapshot = firestore.collection("queueHistory")
+        val snapshot = firestore.collection(FirestoreCollections.QUEUE_HISTORY)
             .document(queueId)
-            .collection("users")
-            .get() // Firestore suspend extension
-        val histories = snapshot.documents.map { it.data<UserQueueHistory>() }
+            .collection(FirestoreCollections.USERS)
+            .get()
 
-        if (histories.isEmpty()) return getQueue(queueId).avgServiceTime // default 10 min in ms
+        val histories = snapshot.documents.map { it.data<UserQueueHistory>() }
+        if (histories.isEmpty()) return getQueue(queueId).avgServiceTime
 
         val avgServiceTime = histories.map { it.serviceTime }.average()
         return avgServiceTime.toLong()
     }
 
+    // ------------------ 🔹 Misc ------------------
     override suspend fun fetchUserQByUserId(userId: String): UserQueue? {
         return null
     }

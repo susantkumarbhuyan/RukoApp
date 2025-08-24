@@ -4,12 +4,13 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Queue(
-    val id: String = "",
-    val name: String = "",
-    val size: Int = 5,
-    val time: Int = 100,
-    val type: String = "",
-    val status: String = "",
+    val id: String = "",                  // queueId
+    val businessId: String = "",          // which business created it
+    val name: String = "",                // e.g., "Doctor OPD"
+    val description: String = "",
+    val createdAt: String = "",           // ISO datetime
+    val isActive: Boolean = true,
+    val dailyLimit: Int = 100,            // default tokens per day
     val avgServiceTime: Long = 10,
-    val storeId: String = "", // Reference to the Owner ID
+    val endTime: String = ""              // ISO datetime until which queue is active today
 )

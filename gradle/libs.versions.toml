@@ -1,6 +1,6 @@
 [versions]
 #Hot-reload
-firebaseAnalytics = "2.1.0"
+firebaseAnalytics = "2.3.0"
 hotReload = "1.0.0-beta05"
 #InAppReview
 inAppReview = "2.0.2"
@@ -22,11 +22,9 @@ ksp = "2.2.0-2.0.2"
 kotlinxSerializationJson = "1.9.0"
 kotlinxDateTime = "0.7.1"
 kotlin = "2.2.10"
-kotlinx-coroutines = "1.10.2"
 
 # Android
 agp = "8.12.1"
-comGoogleDevtoolsKspGradlePlugin = "2.2.0-2.0.2"
 
 android-compileSdk = "36"
 android-minSdk = "26"
@@ -88,14 +86,12 @@ sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sql
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coilCompose" }
 coil-network = { group = "io.coil-kt.coil3", name = "coil-network-ktor3", version.ref = "coilCompose" }
 
-
 #InAppUpdate
 app-update = { group = "com.google.android.play", name = "app-update", version.ref = "inAppUpdate" }
 app-update-ktx = { group = "com.google.android.play", name = "app-update-ktx", version.ref = "inAppUpdate" }
 #InAppReview
 review = { group = "com.google.android.play", name = "review", version.ref = "inAppReview" }
 review-ktx = { group = "com.google.android.play", name = "review-ktx", version.ref = "inAppReview" }
-
 
 #Datastore
 datastore = { module = "androidx.datastore:datastore", version.ref = "datastore" }
@@ -125,30 +121,10 @@ kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDateTime" }
 
-# Gradle Plugins
-ksp-gradle-plugin = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin", version.ref = "comGoogleDevtoolsKspGradlePlugin" }
-kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
-android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
-kotlinMultiplatformGradle = { module = "org.jetbrains.kotlin.multiplatform:org.jetbrains.kotlin.multiplatform.gradle.plugin", version.ref = "kotlin" }
-
 #Compose UI
 backhandler = { module = "org.jetbrains.compose.ui:ui-backhandler", version.ref = "backhandler" }
-compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
-compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
-compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMultiplatform" }
-compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
-compose-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
-compose-resources = { module = "org.jetbrains.compose.components:resources", version.ref = "composeMultiplatform" }
-compose-ui-tooling-preview = { module = "org.jetbrains.compose.components:ui-tooling-preview", version.ref = "composeMultiplatform" }
-
-
-
-kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-androidx-annotation = { module = "androidx.annotation:annotation", version = "1.9.1" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
-androidx-lifecycle-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
-symbol-processing-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "comGoogleDevtoolsKspGradlePlugin" }
 qr-kit = { module = "network.chaintech:qr-kit", version.ref = "qrKit" }
 
 [plugins]
