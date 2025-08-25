@@ -1,5 +1,8 @@
 package com.ruko.system.utils
 
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
+
 object TimeUtils {
 
     /**
@@ -36,4 +39,7 @@ object TimeUtils {
             "$minutes min"
         }
     }
+
+    @OptIn(ExperimentalTime::class)
+    fun currentTimeInMilli() = Clock.System.now().toEpochMilliseconds()
 }

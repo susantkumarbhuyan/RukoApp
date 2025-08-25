@@ -1,9 +1,9 @@
 package com.ruko.system.domain.model
 
 import com.ruko.system.domain.model.enums.AccountStatus
+import com.ruko.system.utils.TimeUtils.currentTimeInMilli
 import dev.gitlive.firebase.firestore.GeoPoint
 import kotlinx.serialization.Serializable
-import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 @Serializable
@@ -13,18 +13,17 @@ data class BusinessAccount @OptIn(ExperimentalTime::class) constructor(
     val businessName: String = "",
     val businessType: String = "",
     val phone: String = "",
+    val email: String = "",
     val address: String = "",
     val logoUrl: String? = null,
     val openingHours: Map<String, String>? = null,
     val servicesOffered: List<String> = emptyList(),
-//    val avgServiceTime: Long = 600000, // 10 min default
-//    val maxQueueSize: Int? = null,
     val location: GeoPoint? = null,
     val rating: Double = 0.0,
     val reviewsCount: Int = 0,
     val isVerified: Boolean = false,
-    val registeredAt: Long = Clock.System.now().toEpochMilliseconds(),
-    val updatedAt: Long = Clock.System.now().toEpochMilliseconds(),
+    val registeredAt: Long = currentTimeInMilli(),
+    val updatedAt: Long = currentTimeInMilli(),
     val fcmToken: String? = null,
     val language: String? = null,
     val timezone: String? = null,

@@ -6,10 +6,10 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ruko.system.data.local.preference.PreferenceManager
-import com.ruko.system.domain.model.Account
-import com.ruko.system.domain.model.AccountType
+import com.ruko.system.domain.model.LoginCredentials
 import com.ruko.system.domain.model.Owner
 import com.ruko.system.domain.model.User
+import com.ruko.system.domain.model.enums.AccountType
 import com.ruko.system.domain.repository.QueueRepository
 import com.ruko.system.utils.generateUUID
 import kotlinx.coroutines.launch
@@ -18,7 +18,7 @@ class AuthViewModel(
     private val repository: QueueRepository,
     private val preferenceManager: PreferenceManager
 ) : ViewModel() {
-    var loginState by mutableStateOf(Account())
+    var loginState by mutableStateOf(LoginCredentials())
         private set
 
     // States
@@ -183,7 +183,7 @@ class AuthViewModel(
         userState = userState.update()
     }
 
-    fun updateLogin(update: Account.() -> Account) {
+    fun updateLogin(update: LoginCredentials.() -> LoginCredentials) {
         loginState = loginState.update()
     }
 

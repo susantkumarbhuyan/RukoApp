@@ -1,5 +1,6 @@
 package com.ruko.system.domain.model
 
+import com.ruko.system.domain.model.enums.UserQueueStatus
 import kotlinx.serialization.Serializable
 
 @Serializable

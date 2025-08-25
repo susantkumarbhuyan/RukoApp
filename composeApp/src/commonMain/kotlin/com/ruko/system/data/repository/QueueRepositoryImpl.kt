@@ -1,14 +1,14 @@
 package com.ruko.system.data.repository
 
 import com.ruko.system.data.local.preference.PreferenceManager
-import com.ruko.system.domain.model.Account
-import com.ruko.system.domain.model.AccountType
+import com.ruko.system.domain.model.LoginCredentials
 import com.ruko.system.domain.model.Owner
 import com.ruko.system.domain.model.Queue
 import com.ruko.system.domain.model.User
 import com.ruko.system.domain.model.UserQueue
 import com.ruko.system.domain.model.UserQueueHistory
 import com.ruko.system.domain.model.UserQueueStatus
+import com.ruko.system.domain.model.enums.AccountType
 import com.ruko.system.domain.repository.QueueRepository
 import dev.gitlive.firebase.auth.FirebaseAuth
 import dev.gitlive.firebase.database.FirebaseDatabase
@@ -42,13 +42,13 @@ class QueueRepositoryImpl(
         get() = auth.authStateChanged.map { it?.let { User(it.uid) } ?: User() }
 
     // ------------------ 🔹 Auth ------------------
-    private suspend fun signIn(loginState: Account): String {
+    private suspend fun signIn(loginState: LoginCredentials): String {
         val result = auth.signInWithEmailAndPassword(loginState.email, loginState.password)
         return result.user?.uid ?: throw Exception("Authentication failed")
     }
 
     override suspend fun <T : Any> authenticate(
-        loginState: Account,
+        loginState: LoginCredentials,
         accountType: AccountType,
     ): T? {
         val uid = signIn(loginState)

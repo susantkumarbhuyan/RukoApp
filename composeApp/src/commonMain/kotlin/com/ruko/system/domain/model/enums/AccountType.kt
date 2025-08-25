@@ -1,4 +1,4 @@
-package com.ruko.system.domain.model
+package com.ruko.system.domain.model.enums
 
 import com.ruko.system.data.repository.FirestoreCollections
 

@@ -1,11 +1,11 @@
 package com.ruko.system.domain.repository
 
-import com.ruko.system.domain.model.Account
-import com.ruko.system.domain.model.AccountType
+import com.ruko.system.domain.model.LoginCredentials
 import com.ruko.system.domain.model.Owner
 import com.ruko.system.domain.model.Queue
 import com.ruko.system.domain.model.User
 import com.ruko.system.domain.model.UserQueue
+import com.ruko.system.domain.model.enums.AccountType
 import kotlinx.coroutines.flow.Flow
 
 interface QueueRepository {
@@ -14,7 +14,7 @@ interface QueueRepository {
     val currentUser: Flow<User>
 
     suspend fun <T : Any> authenticate(
-        loginState: Account,
+        loginState: LoginCredentials,
         accountType: AccountType
     ): T?
 
