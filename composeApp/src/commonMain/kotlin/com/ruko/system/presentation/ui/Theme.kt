@@ -1,5 +1,6 @@
 package com.ruko.system.presentation.ui
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import com.ruko.system.presentation.ui.themes.DarkColors
@@ -7,7 +8,7 @@ import com.ruko.system.presentation.ui.themes.LightColors
 
 @Composable
 fun MainTheme(
-    useDarkTheme: Boolean = false,
+    useDarkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
     val colors = if (useDarkTheme) DarkColors else LightColors

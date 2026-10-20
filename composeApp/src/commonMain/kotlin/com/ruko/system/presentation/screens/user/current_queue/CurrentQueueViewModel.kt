@@ -4,72 +4,80 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ruko.system.data.local.preference.PreferenceManager
 import com.ruko.system.domain.repository.QueueRepository
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.ruko.system.utils.QueueTiming
+import com.ruko.system.utils.TimeUtils
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class CurrentQueueViewModel(
     private val repository: QueueRepository,
     private val preferenceManager: PreferenceManager
 ) : ViewModel() {
-
     private val _state = MutableStateFlow<CurrentQueueState>(CurrentQueueState.Loading)
-    val state: StateFlow<CurrentQueueState> = _state.asStateFlow()
+    val state = _state.asStateFlow()
+    private val _busy = MutableStateFlow(false)
+    val busy = _busy.asStateFlow()
+    private val _actionError = MutableStateFlow<String?>(null)
+    val actionError = _actionError.asStateFlow()
+    private var observer: Job? = null
 
     fun loadQueue(queueId: String) {
-        viewModelScope.launch {
+        observer?.cancel()
+        observer = viewModelScope.launch {
             _state.value = CurrentQueueState.Loading
             try {
-                // Run both calls in parallel for speed
-                val queueDeferred = async { repository.getQueue(queueId) }
-                val sizeDeferred = async { repository.getUserQueueSize(queueId) }
-                val avgTimeDeferred = async { repository.getAverageServiceTime(queueId) }
-
-                val queue = queueDeferred.await()
-                val size = sizeDeferred.await()
-                val avgServiceTime = avgTimeDeferred.await() // in ms
-
-                val currentPosition = size + 1
-                val estimatedTime = currentPosition * avgServiceTime
-
-                _state.value = CurrentQueueState.Success(
-                    queue = queue,
-                    queueId = queueId,
-                    currentPosition = currentPosition,
-                    estimatedTime = estimatedTime
-                )
-            } catch (e: Exception) {
-                _state.value = CurrentQueueState.Error(e.message ?: "Failed to load queue")
-            }
-        }
-    }
-
-    fun leaveQueue(queueId: String, onLeft: () -> Unit) {
-        viewModelScope.launch {
-            try {
-                val userId = _cachedUserId()
-                    ?: throw IllegalStateException("User not found")
-
-                withContext(Dispatchers.IO) {
-                    repository.leaveUserQueue(queueId, userId)
+                val userId = repository.currentUserId.takeIf { it.isNotBlank() }
+                    ?: error("Please sign in again")
+                val queue = repository.getQueue(queueId)
+                val clock = flow {
+                    while (true) {
+                        emit(TimeUtils.currentTimeInMilli())
+                        delay(15_000)
+                    }
                 }
-                onLeft()
+                combine(repository.observeUserQueue(queueId), clock, repository.observeAverageServiceTime(queueId)) { entries, now, average ->
+                    val position = QueueTiming.position(entries, userId)
+                    val own = entries.firstOrNull { it.userId == userId }
+                    if (position == 0) CurrentQueueState.Finished
+                    else CurrentQueueState.Success(
+                        queue, queueId, position,
+                        QueueTiming.waitMillis(entries, userId, average, now),
+                        entries.size, own?.arrivedAt != null, own?.startedAt != null
+                    )
+                }.collect { result ->
+                    if (result is CurrentQueueState.Finished) preferenceManager.deleteJoinedQueue()
+                    _state.value = result
+                }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _state.value = CurrentQueueState.Error(e.message ?: "Failed to leave queue")
+                _state.value = CurrentQueueState.Error(e.message ?: "Could not load your queue")
             }
         }
     }
 
-    // Cache userId so we don’t fetch every time
-    private var cachedUserId: String? = null
-    private suspend fun _cachedUserId(): String? {
-        return cachedUserId ?: preferenceManager.getUserProfile()?.id.also {
-            cachedUserId = it
+    fun arrive(queueId: String) = action {
+        repository.markArrived(queueId, repository.currentUserId)
+    }
+
+    fun leaveQueue(queueId: String, onLeft: () -> Unit) = action {
+        repository.leaveUserQueue(queueId, repository.currentUserId)
+        preferenceManager.deleteJoinedQueue()
+        onLeft()
+    }
+
+    private fun action(block: suspend () -> Unit) {
+        if (_busy.value) return
+        _busy.value = true
+        _actionError.value = null
+        viewModelScope.launch {
+            try { block() }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) { _actionError.value = e.message ?: "Please try again" }
+            finally { _busy.value = false }
         }
     }
 }

@@ -1,46 +1,22 @@
 package com.ruko.system.presentation.screens.owner
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ruko.system.domain.model.Queue
-import com.ruko.system.presentation.componnts.AppCard
+import com.ruko.system.presentation.componnts.QueueNotice
 import com.ruko.system.presentation.navigation.Screen
-import com.ruko.system.presentation.navigation.Screen.Owner.QueueDetails
 import com.ruko.system.presentation.screens.owner.queue.QueueListUiState
+import com.ruko.system.utils.TimeUtils
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,195 +25,84 @@ fun OwnerHomeScreen(
     viewModel: OwnerHomeViewModel = koinViewModel(),
     navigate: (Screen) -> Unit
 ) {
-    val queueListState by viewModel.queueListState.collectAsState()
-    val ownerProfile by viewModel.ownerProfile.collectAsState()
-
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                navigationIcon = {
-                    IconButton(onClick = { navigate(Screen.Owner.Profile) }) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Profile",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                },
-                title = {
-                    Text(
-                        text = "Dashboard",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground
-                )
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp, vertical = 24.dp)
-        ) {
-            // Business Info
-            ownerProfile?.let { owner ->
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = owner.businessName.ifEmpty { "Business Name Not Set" },
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                    Text(
-                        text = owner.businessType,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
+    val state by viewModel.queueListState.collectAsState()
+    val owner by viewModel.ownerProfile.collectAsState()
+    LaunchedEffect(Unit) { viewModel.refreshQueues() }
+    Scaffold(topBar = {
+        TopAppBar(title = { Text("RUKO", fontWeight = FontWeight.Bold) },
+            actions = {
+                IconButton(onClick = { navigate(Screen.Owner.Profile) }) {
+                    Icon(Icons.Default.AccountCircle, "Business profile")
                 }
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-
-            // Handle Queue States
-            when (queueListState) {
-                QueueListUiState.Idle,
-                QueueListUiState.Loading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-
-                QueueListUiState.Empty -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "You don't have any queues yet. Create your first one to get started!",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 32.dp)
-                        )
-                    }
-                }
-
-                is QueueListUiState.Error -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = (queueListState as QueueListUiState.Error).message,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(onClick = { viewModel.refreshQueues() }) {
-                                Text("Retry")
-                            }
-                        }
-                    }
-                }
-
-                is QueueListUiState.Success -> {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(bottom = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        items((queueListState as QueueListUiState.Success).queues) { queue ->
-                            QueueCard(
-                                queue = queue,
-                                onClick = { navigate(QueueDetails(queue.id)) }
-                            )
-                        }
-                    }
-                }
-
-                QueueListUiState.NoOwner -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "No Owner Found",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Create Queue Button
+            })
+    }, bottomBar = {
+        Surface {
             Button(
-                onClick = {
-                    navigate(
-                        Screen.Owner.CreateQueue(
-                            storeId = ownerProfile?.id ?: ""
-                        )
-                    )
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(12.dp),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                onClick = { owner?.id?.takeIf { it.isNotBlank() }?.let {
+                    navigate(Screen.Owner.CreateQueue(storeId = it))
+                } },
+                enabled = !owner?.id.isNullOrBlank(),
+                modifier = Modifier.fillMaxWidth().padding(20.dp).heightIn(min = 56.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Create Queue")
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Create New Queue")
+                Icon(Icons.Default.Add, null)
+                Spacer(Modifier.width(8.dp))
+                Text("Create a queue")
+            }
+        }
+    }) { padding ->
+        LazyColumn(Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(24.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)) {
+            item {
+                Text(owner?.businessName?.ifBlank { "Your business" } ?: "Your business",
+                    style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text("A smoother day starts here", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            item { QueueNotice("Your queues",
+                "Open a queue to share its QR code, check arrivals, and serve the next customer.") }
+            when (val data = state) {
+                QueueListUiState.Loading, QueueListUiState.Idle -> item { CircularProgressIndicator() }
+                QueueListUiState.Empty -> item {
+                    Text("Ready for your first customer?",
+                        style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text("Create a queue, display its QR code, and let customers join from their phones.")
+                }
+                QueueListUiState.NoOwner -> item { Text("Sign in with your business account to continue.") }
+                is QueueListUiState.Error -> item {
+                    Text(data.message, color = MaterialTheme.colorScheme.error)
+                    TextButton(onClick = viewModel::refreshQueues) { Text("Try again") }
+                }
+                is QueueListUiState.Success -> {
+                    item {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("${data.queues.size} queues", style = MaterialTheme.typography.titleMedium)
+                            TextButton(onClick = viewModel::refreshQueues) { Text("Refresh") }
+                        }
+                    }
+                    items(data.queues, key = { it.id }) { queue ->
+                        QueueCard(queue) { navigate(Screen.Owner.QueueDetails(queue.id)) }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun QueueCard(
-    queue: Queue,
-    onClick: () -> Unit
-) {
-    AppCard(onClick = onClick) {
-        Text(
-            text = queue.name,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Text(
-            text = "Type: ${queue.type} | Status: ${queue.status}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = "Size: ${queue.size} | Avg Service Time: ${queue.avgServiceTime} sec",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+fun QueueCard(queue: Queue, onClick: () -> Unit) {
+    OutlinedCard(onClick = onClick, modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(if (queue.isActive && queue.status == "ACTIVE") "OPEN FOR JOINING" else "CLOSED",
+                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+            Text(queue.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(queue.type.ifBlank { "Customer queue" }, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            HorizontalDivider()
+            Text("${TimeUtils.formatMillisToTimeString(queue.avgServiceTime)} per customer",
+                style = MaterialTheme.typography.bodyMedium)
+            Text("Manage queue →", color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold)
+        }
     }
 }
-

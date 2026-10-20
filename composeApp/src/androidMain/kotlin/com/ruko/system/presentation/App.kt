@@ -2,6 +2,11 @@ package com.ruko.system.presentation
 
 import android.app.Application
 import com.google.firebase.FirebaseApp
+import com.google.firebase.appcheck.FirebaseAppCheck
+import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
+import android.content.pm.ApplicationInfo
+import com.ruko.system.notifications.RukoMessagingService
 import com.ruko.system.di.initKoin
 import com.ruko.system.utils.MAppContext
 import org.koin.android.ext.koin.androidContext
@@ -12,12 +17,19 @@ import org.koin.core.logger.Level
 class MyApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        FirebaseApp.initializeApp(this)
+        val debug = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        FirebaseAppCheck.getInstance().installAppCheckProviderFactory(
+            if (debug) DebugAppCheckProviderFactory.getInstance()
+            else PlayIntegrityAppCheckProviderFactory.getInstance()
+        )
+        RukoMessagingService.ensureChannel(this)
         AndroidContextProvider.init(this)
         MAppContext.set(this)
         initKoin {
             androidLogger(Level.DEBUG)
             androidContext(this@MyApp)
         }
-        FirebaseApp.initializeApp(this)
+        RukoMessagingService.enqueueTokenSync(this)
     }
 }

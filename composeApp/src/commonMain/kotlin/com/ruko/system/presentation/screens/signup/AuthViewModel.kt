@@ -1,5 +1,7 @@
 package com.ruko.system.presentation.screens.signup
 
+import com.ruko.system.data.local.preference.SessionManager
+
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -50,6 +52,7 @@ class AuthViewModel(
 
     // -------- Owner Registration --------
     fun registerOwner(onSuccess: () -> Unit) {
+        if (isLoading) return
         if (!isOwnerValid) {
             errorMessage = "Please fill in all fields correctly"
             return
@@ -65,11 +68,13 @@ class AuthViewModel(
             onSuccess = {
                 viewModelScope.launch {
                     try {
-                        preferenceManager.saveOwnerProfile(owner)
+                        preferenceManager.saveOwnerProfile(owner.copy(id = repository.currentUserId, password = ""))
                         preferenceManager.setLoggedIn(true)
                         preferenceManager.setUserType(SessionManager.UserType.OWNER)
                         onSuccess()
-                    } catch (e: Exception) {
+                    } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
                         errorMessage = e.message ?: "Registration failed"
                     } finally {
                         isLoading = false
@@ -81,6 +86,7 @@ class AuthViewModel(
 
     // ---------------- User Registration ----------------
     fun registerUser(onSuccess: () -> Unit) {
+        if (isLoading) return
         if (!isUserValid) {
             errorMessage = "Please fill all fields correctly"
             return
@@ -93,11 +99,13 @@ class AuthViewModel(
             onSuccess = {
                 viewModelScope.launch {
                     try {
-                        preferenceManager.saveUserProfile(user)
+                        preferenceManager.saveUserProfile(user.copy(id = repository.currentUserId, password = ""))
                         preferenceManager.setLoggedIn(true)
                         preferenceManager.setUserType(SessionManager.UserType.USER)
                         onSuccess()
-                    } catch (e: Exception) {
+                    } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
                         errorMessage = e.message ?: "Registration failed"
                     } finally {
                         isLoading = false
@@ -112,6 +120,7 @@ class AuthViewModel(
         accountType: AccountType,
         onSuccess: () -> Unit
     ) {
+        if (isLoading) return
         if (!isValidEmail(loginState.email) || loginState.password.length < 6) {
             errorMessage = "Invalid email or password format"
             return
@@ -121,8 +130,8 @@ class AuthViewModel(
             try {
                 isLoading = true
                 val profile = when (accountType) {
-                    AccountType.USER -> repository.authenticate<Owner>(loginState, accountType)
-                    AccountType.OWNER -> repository.authenticate<User>(loginState, accountType)
+                    AccountType.USER -> repository.authenticate<User>(loginState, accountType)
+                    AccountType.OWNER -> repository.authenticate<Owner>(loginState, accountType)
                 }
                 if (profile != null) {
                     when (profile) {
@@ -141,6 +150,8 @@ class AuthViewModel(
                 } else {
                     errorMessage = "Invalid email or password"
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 errorMessage = "Login failed: ${e.message}"
             } finally {
@@ -157,6 +168,8 @@ class AuthViewModel(
                 errorMessage = null
                 action()
                 onSuccess?.invoke()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Operation failed"
             } finally {
@@ -191,10 +204,10 @@ class AuthViewModel(
     fun validateOwnerFields(): List<String> {
         val errors = mutableListOf<String>()
         if (ownerState.name.isBlank()) errors.add("Name is required")
-        if (ownerState.name.isBlank()) errors.add("Email is required")
-        if (ownerState.name.isBlank() || ownerState.name.length < 6) errors.add("Password must be at least 6 characters")
-        if (!isValidEmail(ownerState.name)) errors.add("Invalid email format")
-        if (ownerState.name.isNotBlank() && ownerState.name.length < 10) errors.add("Phone number must be at least 10 digits")
+        if (ownerState.email.isBlank()) errors.add("Email is required")
+        if (ownerState.password.length < 6) errors.add("Password must be at least 6 characters")
+        if (!isValidEmail(ownerState.email)) errors.add("Invalid email format")
+        if (ownerState.phoneNumber.isNotBlank() && ownerState.phoneNumber.length < 10) errors.add("Phone number must be at least 10 digits")
         return errors
     }
 

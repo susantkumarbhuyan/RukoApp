@@ -135,7 +135,8 @@ fun QrScannerView(
             openImagePicker = openImagePicker,
             onCompletion = { result ->
                 coroutineScope.launch {
-                    if (result.startsWith("RUKO_")) {
+                    if (qrCodeURL.isEmpty() && result.startsWith("RUKO_") &&
+                        com.ruko.system.utils.RukoQr.decode(result) != null) {
                         val cleanedQr = result.removePrefix("RUKO_") // remove the "RUKO_" prefix
                         qrCodeURL = cleanedQr
                         onCodeScanned(cleanedQr)
@@ -221,6 +222,11 @@ fun QrScannerView(
             }
         }
 
+        androidx.compose.material3.SnackbarHost(
+            hostState = snackBarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 100.dp)
+        )
+
         // Brand overlay
         Text(
             text = "RUKO",
@@ -297,7 +303,9 @@ fun getAnimatedQrOverlay(
     boxScale: Float // New parameter
 ): ContentDrawScope.() -> Unit {
     return {
-        val baseSize = 300.dp.toPx()
+        val canvasWidth = this.size.width
+        val canvasHeight = this.size.height
+        val baseSize = minOf(300.dp.toPx(), canvasWidth - 48.dp.toPx())
         val size = baseSize * boxScale // Animate the size
         val topOffset = -50.dp.toPx()
         val top = (this.size.height - size) / 2 + topOffset
@@ -308,7 +316,7 @@ fun getAnimatedQrOverlay(
 
         // 1. Create a Path for the full screen
         val fullScreenPath = Path().apply {
-            addRect(Rect(Offset.Zero, size * 2 * 2))
+            addRect(Rect(0f, 0f, canvasWidth, canvasHeight))
         }
 
         // 2. Create a Path for the rounded hole
@@ -433,5 +441,5 @@ fun getAnimatedQrOverlay(
 }
 
 fun isValidRukoQr(qr: String): Boolean {
-    return qr.startsWith("RUKO_") // simple validation rule
+    return qr.startsWith("RUKO_") && com.ruko.system.utils.RukoQr.decode(qr) != null
 }

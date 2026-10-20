@@ -19,7 +19,7 @@ class OwnerHomeViewModel(
     private val _queueListState = MutableStateFlow<QueueListUiState>(QueueListUiState.Idle)
     val queueListState: StateFlow<QueueListUiState> = _queueListState.asStateFlow()
 
-    private val _ownerProfile = MutableStateFlow<Owner?>(Owner())
+    private val _ownerProfile = MutableStateFlow<Owner?>(null)
     val ownerProfile: StateFlow<Owner?> = _ownerProfile.asStateFlow()
 
     init {
@@ -55,7 +55,9 @@ class OwnerHomeViewModel(
 
     fun refreshQueues() {
         viewModelScope.launch {
-            val ownerId = _ownerProfile.value?.id
+            val owner = preferenceManager.getOwnerProfile()
+            _ownerProfile.value = owner
+            val ownerId = owner?.id
             if (ownerId.isNullOrBlank()) {
                 _queueListState.value = QueueListUiState.NoOwner
             } else {

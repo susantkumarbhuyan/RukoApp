@@ -3,6 +3,7 @@ package com.ruko.system.presentation.screens.owner.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ruko.system.data.local.preference.PreferenceManager
+import com.ruko.system.domain.repository.QueueRepository
 import com.ruko.system.domain.model.Owner
 import com.ruko.system.domain.model.QRQueue
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +23,8 @@ sealed class OwnerHomeUiState {
 }
 
 class OwnerProfileViewModel(
-    private val preferenceManager: PreferenceManager
+    private val preferenceManager: PreferenceManager,
+    private val repository: QueueRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<OwnerHomeUiState>(OwnerHomeUiState.Loading)
@@ -74,10 +76,11 @@ class OwnerProfileViewModel(
         loadOwnerProfile()
     }
 
-    fun logout() {
+    fun logout(onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             try {
-                preferenceManager.logout()
+                repository.signOut()
+                onSuccess()
             } catch (e: Exception) {
                 // Handle logout error if needed
                 _uiState.value = OwnerHomeUiState.Error(

@@ -1,5 +1,7 @@
 package com.ruko.system.presentation.screens.owner.queue
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -49,12 +51,12 @@ fun CreateQueueScreen(
 ) {
     val queueState by viewModel.queueState.collectAsState()
 
+    val newQueueId = remember { generateUUID() }
     var name by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("") }
     var status by remember { mutableStateOf(QueueStatus.ACTIVE) }
     var size by remember { mutableStateOf("5") }
     var avgServiceTime by remember { mutableStateOf("10") }
-    var time by remember { mutableStateOf("100") }
 
     Scaffold(
         topBar = {
@@ -72,7 +74,8 @@ fun CreateQueueScreen(
             Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp)
         ) {
             QueueForm(
                 name, { name = it },
@@ -80,35 +83,31 @@ fun CreateQueueScreen(
                 status, { status = it },
                 size, { size = it },
                 avgServiceTime, { avgServiceTime = it }
-            ) {
-                OutlinedTextField(
-                    value = time,
-                    onValueChange = { time = it.filter(Char::isDigit) },
-                    label = { Text("Estimated Time (sec)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+            )
 
             Spacer(Modifier.height(24.dp))
 
             Button(
                 onClick = {
                     val newQueue = Queue(
-                        id = generateUUID(),
+                        id = newQueueId,
                         name = name,
                         type = type,
                         status = status.name,
+                        isActive = status == QueueStatus.ACTIVE,
                         size = size.toIntOrNull() ?: 5,
-                        avgServiceTime = avgServiceTime.toLongOrNull() ?: 10,
-                        time = time.toIntOrNull() ?: 100,
+                        maxQueueSize = size.toIntOrNull() ?: 5,
+                        avgServiceTime = (avgServiceTime.toLongOrNull() ?: 10) * 60_000,
+                        businessId = storeId,
                         storeId = storeId
                     )
                     viewModel.createQueue(newQueue)
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                enabled = queueState !is QueueUiState.Loading
+                enabled = queueState !is QueueUiState.Loading && name.isNotBlank() &&
+                    storeId.isNotBlank() && (avgServiceTime.toLongOrNull() ?: 0) in 1L..1440L &&
+                    (size.toIntOrNull() ?: 0) in 1..200
             ) {
                 if (queueState is QueueUiState.Loading) {
                     CircularProgressIndicator(
@@ -136,9 +135,7 @@ fun CreateQueueScreen(
 
                 is QueueUiState.Error -> {
                     val message = (queueState as QueueUiState.Error).message
-                    LaunchedEffect(message) {
-                        viewModel.resetState()
-                    }
+                    Text(message, color = MaterialTheme.colorScheme.error)
                 }
 
                 else -> {}

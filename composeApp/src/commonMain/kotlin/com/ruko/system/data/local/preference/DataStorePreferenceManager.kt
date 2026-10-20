@@ -128,7 +128,7 @@ class DataStorePreferenceManager(
             preferences[USER_ID] = user.id
             preferences[USER_NAME] = user.name
             preferences[USER_EMAIL] = user.email
-            preferences[USER_PASSWORD] = user.password
+            preferences.remove(USER_PASSWORD)
             preferences[USER_PHONE_NUMBER] = user.phoneNumber
             preferences[IS_LOGGED_IN] = true
             preferences[USER_TYPE] = SessionManager.UserType.USER.name
@@ -141,7 +141,7 @@ class DataStorePreferenceManager(
         val id = preferences[USER_ID] ?: return null
         val name = preferences[USER_NAME] ?: ""
         val email = preferences[USER_EMAIL] ?: ""
-        val password = preferences[USER_PASSWORD] ?: ""
+        val password = ""
         val phoneNumber = preferences[USER_PHONE_NUMBER] ?: ""
 
         return User(
@@ -254,6 +254,17 @@ class DataStorePreferenceManager(
 
     override suspend fun getJoinedQueue(): String? {
         return dataStore.data.first()[JOINED_QUEUE]
+    }
+
+    override suspend fun getPendingRequest(key: String): String? =
+        dataStore.data.first()[stringPreferencesKey("pending_request_" + key)]
+
+    override suspend fun putPendingRequest(key: String, id: String) {
+        dataStore.edit { it[stringPreferencesKey("pending_request_" + key)] = id }
+    }
+
+    override suspend fun clearPendingRequest(key: String) {
+        dataStore.edit { it.remove(stringPreferencesKey("pending_request_" + key)) }
     }
 
     override suspend fun deleteJoinedQueue() {

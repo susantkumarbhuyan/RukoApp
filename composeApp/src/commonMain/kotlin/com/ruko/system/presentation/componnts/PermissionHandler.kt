@@ -27,7 +27,7 @@ suspend fun checkPermission(
             showPermissionSnackbar("Request Canceled", controller, snackBarHostState)
         }
     }
-    return true // ✅ Always return after handling
+    return controller.isPermissionGranted(permission)
 }
 
 

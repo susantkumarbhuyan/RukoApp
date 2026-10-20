@@ -9,7 +9,6 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ksp)
     id("com.google.gms.google-services")
-    alias(libs.plugins.kotlinCocoapods)
 //    id("org.jetbrains.kotlin.native.cocoapods")
 }
 
@@ -17,7 +16,7 @@ kotlin {
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+            jvmTarget.set(JvmTarget.JVM_17)
         }
     }
 
@@ -33,26 +32,16 @@ kotlin {
         }
     }
 
-    cocoapods {
-//        HtmlStyle.summary = "My compose multiplatform app"
-        version = "1.0"
-        ios.deploymentTarget = "13.0"  // <-- Add this line
-
-//        pod("FirebaseCore") { version = "~> 10.22.0" }
-//        pod("FirebaseAnalytics") { version = "~> 10.22.0" }
-//        pod("FirebaseAuth") { version = "~> 10.22.0" }
-//        pod("FirebaseDatabase") { version = "~> 10.22.0" }
-//        pod("FirebaseMessaging") { version = "~> 10.22.0" }
-////        pod("FirebaseCrashlytics") { version = "~> 10.22.0" }
-//        pod("FirebaseFirestore") { version = "~> 10.22.0" }
-//        pod("FirebaseRemoteConfig") { version = "~> 10.22.0" }
-//        pod("FirebaseStorage") { version = "~> 10.22.0" }
-    }
+    // Native Firebase frameworks are linked through Swift Package Manager in iosApp.
     sourceSets {
         androidMain.dependencies {
 
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.work.manager)
+            implementation(project.dependencies.platform("com.google.firebase:firebase-bom:33.15.0"))
+            implementation("com.google.firebase:firebase-appcheck-playintegrity")
+            implementation("com.google.firebase:firebase-appcheck-debug")
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -84,13 +73,14 @@ kotlin {
             implementation(libs.compose.navigation)
             implementation(libs.gitlive.firebase.analytics)
             implementation(libs.firebase.auth)
-            implementation(libs.firebase.database)
+            implementation(libs.firebase.functions)
             implementation(libs.firebase.messaging)
 //            implementation(libs.firebase.crashlytics)
             implementation(libs.firebase.firestore)
             implementation(libs.kotlinx.datetime)
         }
         commonTest.dependencies {
+            implementation(kotlin("test"))
         }
     }
 }

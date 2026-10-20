@@ -157,7 +157,7 @@ fun QueueDetailsScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             ActionButton(
-                                text = "View Users",
+                                text = "Manage live queue",
                                 icon = Icons.Default.People,
                                 onClick = { onUserListClick(queue.id) },
                                 isPrimary = true
@@ -224,13 +224,13 @@ fun QueueInfoCard(queue: Queue) {
             )
             InfoRow(
                 icon = Icons.Rounded.People,
-                label = "Size",
+                label = "Queue capacity",
                 value = "${queue.size}"
             )
             InfoRow(
                 icon = Icons.Rounded.Schedule,
-                label = "Estimated Wait Time",
-                value = "${queue.time} sec"
+                label = "Waiting time",
+                value = "Updates live for each customer"
             )
             InfoRow(
                 icon = Icons.Rounded.Timer,
@@ -287,13 +287,13 @@ fun ActionButton(
         )
 
         isPrimary -> ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF4CAF50), // Green
+            containerColor = MaterialTheme.colorScheme.primary, // Green
             contentColor = Color.White
         )
 
         else -> ButtonDefaults.outlinedButtonColors(
             containerColor = Color.Transparent,
-            contentColor = Color(0xFF2196F3) // Blue
+            contentColor = MaterialTheme.colorScheme.primary // Blue
         )
     }
 
@@ -317,7 +317,7 @@ fun ActionButton(
             modifier = modifier, // use caller's modifier
             shape = RoundedCornerShape(12.dp),
             colors = buttonColors,
-            border = BorderStroke(1.dp, Color(0xFF2196F3))
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp))
@@ -361,14 +361,14 @@ private fun GenerateQueueQR(queue: Queue) {
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFFF0F4C3)) // Light yellow/lime color
+                .background(MaterialTheme.colorScheme.primaryContainer) // Light yellow/lime color
                 .padding(24.dp)
         ) {
             Text(
                 text = "Scan to Join Queue",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF689F38) // Darker green
+                color = MaterialTheme.colorScheme.onPrimaryContainer // Darker green
             )
 
             queue.let { que ->
@@ -384,7 +384,7 @@ private fun GenerateQueueQR(queue: Queue) {
                         .size(220.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .border(
-                            BorderStroke(4.dp, Color(0xFF8BC34A)), // Green border
+                            BorderStroke(4.dp, MaterialTheme.colorScheme.primary), // Green border
                             RoundedCornerShape(16.dp)
                         ),
                     url = "RUKO_${Json.encodeToString(qrData)}",
@@ -400,9 +400,9 @@ private fun GenerateQueueQR(queue: Queue) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color(0xFF388E3C) // Dark green
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer // Dark green
                     ),
-                    border = BorderStroke(1.dp, Color(0xFF388E3C))
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimaryContainer)
                 ) {
                     Icon(Icons.Default.Share, contentDescription = "Share")
                     Spacer(modifier = Modifier.width(8.dp))

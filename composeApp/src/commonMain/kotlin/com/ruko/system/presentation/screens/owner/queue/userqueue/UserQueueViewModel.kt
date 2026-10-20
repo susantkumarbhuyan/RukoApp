@@ -17,8 +17,15 @@ class UserQueueViewModel(
     private val _uiState = MutableStateFlow<UserQueueUiState>(UserQueueUiState.Loading)
     val uiState: StateFlow<UserQueueUiState> = _uiState.asStateFlow()
 
+    private var observer: kotlinx.coroutines.Job? = null
+    private val _busy = MutableStateFlow(false)
+    val busy = _busy.asStateFlow()
+    private val _actionError = MutableStateFlow<String?>(null)
+    val actionError = _actionError.asStateFlow()
+
     fun observeUserQueues(queueId: String) {
-        viewModelScope.launch {
+        observer?.cancel()
+        observer = viewModelScope.launch {
             repository.observeUserQueueWithUserInfo(queueId)
                 .onStart { _uiState.value = UserQueueUiState.Loading }
                 .catch { e ->
@@ -34,13 +41,23 @@ class UserQueueViewModel(
         }
     }
 
-    fun markCompleted(queueId: String, userQueueId: String) {
+    fun startService(queueId: String, entryId: String) = action {
+        repository.startService(queueId, entryId)
+    }
+
+    fun markCompleted(queueId: String, userQueueId: String) = action {
+        repository.markUserQueueCompleted(queueId, userQueueId)
+    }
+
+    private fun action(block: suspend () -> Unit) {
+        if (_busy.value) return
+        _busy.value = true
+        _actionError.value = null
         viewModelScope.launch {
-            try {
-                repository.markUserQueueCompleted(queueId, userQueueId)
-            } catch (e: Exception) {
-                _uiState.value = UserQueueUiState.Error("Failed to update queue")
-            }
+            try { block() }
+            catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) { _actionError.value = e.message ?: "Could not update queue" }
+            finally { _busy.value = false }
         }
     }
 }
