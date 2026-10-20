@@ -108,7 +108,7 @@ fun NavGraphBuilder.signUpGraph(
         }
         animatedComposable<Screen.OnBoarding.SignUp.User> {
             SignUpUserScreen {
-                navController.navigate(Screen.User) {
+                navController.navigate(NavGraph.UserGraph) {
                     popUpTo(Screen.OnBoarding.SignUp) { inclusive = true }
                     launchSingleTop = true
                 }
@@ -116,7 +116,7 @@ fun NavGraphBuilder.signUpGraph(
         }
         animatedComposable<Screen.OnBoarding.SignUp.Owner> {
             SignUpOwnerScreen {
-                navController.navigate(Screen.Owner) {
+                navController.navigate(NavGraph.OwnerGraph) {
                     popUpTo(Screen.OnBoarding.SignUp) { inclusive = true }
                     launchSingleTop = true
                 }
@@ -240,7 +240,11 @@ fun NavGraphBuilder.userGraph(
         animatedComposable<Screen.User.JoinQueue> { backStackEntry ->
             val args = backStackEntry.toRoute<Screen.User.JoinQueue>()
             val qrData = args.qrQueue
-            val qrQueue = Json.decodeFromString(QRQueue.serializer(), qrData)
+            val qrQueue = com.ruko.system.utils.RukoQr.decode(qrData)
+            if (qrQueue == null) {
+                androidx.compose.material3.Text("Invalid RUKO QR code. Go back and scan again.")
+                return@animatedComposable
+            }
             JoinQueueScreen(
                 qrQueue = qrQueue,
                 onJoinComplete = { ->
@@ -302,7 +306,7 @@ fun NavGraphBuilder.profileGraph(
                     preferenceManager.logout()
                 }
 
-                navController.navigate(Screen.OnBoarding.SignUp) {
+                navController.navigate(NavGraph.SignUpGraph) {
                     popUpTo(NavGraph.SignUpGraph) { inclusive = true }
                     launchSingleTop = true
                 }

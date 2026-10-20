@@ -1,37 +1,21 @@
 package com.ruko.system.presentation.screens.user
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ruko.system.domain.model.User
-import com.ruko.system.utils.TimeUtils.formatMillisToTimeString
+import com.ruko.system.presentation.componnts.QueueMetric
+import com.ruko.system.presentation.componnts.QueueNotice
+import com.ruko.system.utils.QueueTiming
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -40,197 +24,84 @@ fun UserHomeScreen(
     onQueueClick: (queueId: String) -> Unit,
     viewModel: UserHomeViewModel = koinViewModel()
 ) {
-    val userProfile by viewModel.userProfile.collectAsState()
-    val queueState by viewModel.queueState.collectAsState()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.Top,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        userProfile?.let { UserWelcome(user = it) }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        QueueSection(
-            queueState = queueState,
-            onQueueClick = onQueueClick
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        ScanQrButton(onScanClick = onScanClick)
+    val user by viewModel.userProfile.collectAsState()
+    val state by viewModel.queueState.collectAsState()
+    LaunchedEffect(Unit) { viewModel.refresh() }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        Text("RUKO", style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+        user?.let { UserWelcome(it) }
+        Text("Your time, back in your hands.",
+            style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        QueueSection(state, onQueueClick)
+        if (state !is UserHomeState.JoinedQueue) ScanQrButton(onScanClick)
+        if (state is UserHomeState.Error) {
+            TextButton(onClick = viewModel::refresh) { Text("Try again") }
+        }
+        QueueNotice("How it works", "Scan the business QR code, join the line, and check in when you arrive.")
     }
 }
 
 @Composable
 fun UserWelcome(user: User) {
-    Text(
-        text = "Welcome, ${user.name}!",
-        style = MaterialTheme.typography.headlineSmall,
-        textAlign = TextAlign.Center
-    )
+    Text("Hi, ${user.name.ifBlank { "there" }}",
+        style = MaterialTheme.typography.titleLarge)
 }
 
 @Composable
-fun QueueSection(
-    queueState: UserHomeState,
-    onQueueClick: (queueId: String) -> Unit
-) {
+fun QueueSection(queueState: UserHomeState, onQueueClick: (String) -> Unit) {
     when (queueState) {
-        is UserHomeState.Loading -> CircularProgressIndicator()
-
-        is UserHomeState.JoinedQueue -> {
-            QueueCard(
-                queue = queueState,
-                onClick = { onQueueClick(queueState.queueId) }
-            )
-        }
-
+        UserHomeState.Loading -> CircularProgressIndicator()
         UserHomeState.NoQueue -> NoQueueMessage()
-
-        is UserHomeState.Error -> {
-            Text(
-                text = queueState.message,
-                color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center
-            )
-        }
+        is UserHomeState.Error -> Text(queueState.message, color = MaterialTheme.colorScheme.error)
+        is UserHomeState.JoinedQueue -> QueueCard(queueState) { onQueueClick(queueState.queueId) }
     }
 }
 
 @Composable
 fun QueueCard(queue: UserHomeState.JoinedQueue, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(16.dp))
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = queue.queueName,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                )
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Your Position",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = queue.currentPosition.toString(),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
+    OutlinedCard(onClick = onClick, shape = RoundedCornerShape(24.dp),
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text("YOU'RE IN LINE", style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary)
+            Text(queue.queueName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             QueueDetailsRow(queue)
+            Text("View live queue →", color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold)
         }
     }
 }
 
 @Composable
 fun QueueDetailsRow(queue: UserHomeState.JoinedQueue) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column {
-            Text(
-                text = "Queue Size",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = queue.queueLength.toString(),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = "Est. Time",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = formatMillisToTimeString(queue.estimatedTime),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        QueueMetric("Your position", queue.currentPosition.toString(), Modifier.weight(1f))
+        QueueMetric("Estimated wait", "~${QueueTiming.minutesCeiling(queue.estimatedTime)} min",
+            Modifier.weight(1f))
     }
 }
 
 @Composable
 fun NoQueueMessage() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = Icons.Default.QrCodeScanner,
-            contentDescription = "QR Scanner",
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Text(
-            text = "You have not joined any queue yet.",
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center
-        )
-        Text(
-            text = "Scan the QR code at the counter to join the queue.",
-            style = MaterialTheme.typography.bodySmall,
-            textAlign = TextAlign.Center
-        )
+    Column(Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Icon(Icons.Default.QrCodeScanner, null, Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.primary)
+        Text("Skip the standing around.", style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold)
+        Text("Scan a QR code at your salon or clinic to join its queue.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
 @Composable
 fun ScanQrButton(onScanClick: () -> Unit) {
-    Button(
-        onClick = onScanClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan")
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("Scan QR Code")
+    Button(onClick = onScanClick, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+        Icon(Icons.Default.QrCodeScanner, null)
+        Spacer(Modifier.width(10.dp))
+        Text("Scan to join")
     }
 }

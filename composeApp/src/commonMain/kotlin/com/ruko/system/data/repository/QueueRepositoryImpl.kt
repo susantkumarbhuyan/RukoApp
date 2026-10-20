@@ -60,8 +60,8 @@ class QueueRepositoryImpl(
 
         if (!snapshot.exists) throw Exception("No ${accountType.name} found for UID: $uid")
         val dataMap = when (accountType) {
-            AccountType.USER -> snapshot.data<User>()
-            AccountType.OWNER -> snapshot.data<Owner>()
+            AccountType.USER -> snapshot.data<User>().copy(id = uid)
+            AccountType.OWNER -> snapshot.data<Owner>().copy(id = uid)
         }
         return dataMap as T?
     }
@@ -73,13 +73,13 @@ class QueueRepositoryImpl(
 
     override suspend fun createUserAccount(user: User): String {
         val uid = createUser(user.email, user.password)
-        firestore.collection(FirestoreCollections.USERS).document(uid).set(user.copy(id = uid))
+        firestore.collection(FirestoreCollections.USERS).document(uid).set(user.copy(id = uid, password = ""))
         return uid
     }
 
     override suspend fun createOwnerAccount(owner: Owner): String {
         val uid = createUser(owner.email, owner.password)
-        firestore.collection(FirestoreCollections.OWNERS).document(uid).set(owner)
+        firestore.collection(FirestoreCollections.OWNERS).document(uid).set(owner.copy(id = uid, password = ""))
         return uid
     }
 
@@ -93,7 +93,9 @@ class QueueRepositoryImpl(
     // ------------------ 🔹 Queue CRUD ------------------
     override suspend fun createQueue(queue: Queue) {
         try {
-            firestore.collection(FirestoreCollections.QUEUES).document(queue.id).set(queue)
+            require(currentUserId.isNotBlank() && queue.storeId == currentUserId) { "Please sign in as the owner" }
+            require(queue.name.isNotBlank() && queue.avgServiceTime > 0) { "Enter a name and valid service time" }
+            firestore.collection(FirestoreCollections.QUEUES).document(queue.id).set(queue.copy(businessId = currentUserId))
             preferenceManager.saveQueue(queue)
         } catch (e: Exception) {
             throw Exception("Failed to create queue: ${e.message}", e)
@@ -101,29 +103,35 @@ class QueueRepositoryImpl(
     }
 
     override suspend fun getQueue(queueId: String): Queue {
-        preferenceManager.getQueue(queueId)?.let { return it }
 
         val snapshot = firestore.collection(FirestoreCollections.QUEUES).document(queueId).get()
         if (!snapshot.exists) throw Exception("Queue not found: $queueId")
 
-        val queue = snapshot.data<Queue>()
+        val queue = snapshot.data<Queue>().copy(id = queueId)
         preferenceManager.saveQueue(queue)
         return queue
     }
 
     override suspend fun getQueues(storeId: String): List<Queue> {
-        preferenceManager.getQueues()?.takeIf { it.isNotEmpty() }?.let { return it }
 
         val snapshot = firestore.collection(FirestoreCollections.QUEUES)
             .where { "storeId" equalTo storeId }
             .get()
 
-        val queues = snapshot.documents.map { it.data<Queue>() }
+        val queues = snapshot.documents.map { it.data<Queue>().copy(id = it.id) }
         preferenceManager.saveQueues(queues)
         return queues
     }
 
+    private suspend fun requireQueueOwner(queueId: String) {
+        val queue = getQueue(queueId)
+        check(currentUserId.isNotBlank() && (queue.storeId == currentUserId || queue.businessId == currentUserId)) {
+            "Only the business owner can manage this queue"
+        }
+    }
+
     override suspend fun updateQueue(queue: Queue) {
+        requireQueueOwner(queue.id)
         if (queue.id.isEmpty()) throw IllegalArgumentException("Queue id is required for update")
 
         firestore.collection(FirestoreCollections.QUEUES).document(queue.id).set(queue)
@@ -131,6 +139,8 @@ class QueueRepositoryImpl(
     }
 
     override suspend fun deleteQueue(queueId: String) {
+        requireQueueOwner(queueId)
+        check(getUserQueues(queueId).isEmpty()) { "Finish the active queue before deleting it" }
         firestore.collection(FirestoreCollections.QUEUES).document(queueId).delete()
         preferenceManager.deleteQueue(queueId)
     }
@@ -138,26 +148,63 @@ class QueueRepositoryImpl(
     // ------------------ 🔹 User Queue (Realtime DB) ------------------
     @OptIn(ExperimentalTime::class)
     override suspend fun joinUserQueue(queueId: String, userId: String) {
-        val userQueueId = userQueuesRef.child(queueId).push().key ?: userId
-        val userQueue = UserQueue(
-            id = userQueueId,
-            queueId = queueId,
-            userId = userId,
+        require(userId.isNotBlank() && userId == currentUserId) { "Please sign in again" }
+        val queue = getQueue(queueId)
+        check(queue.isActive && queue.status == "ACTIVE") { "This queue is closed" }
+        val existing = getUserQueues(queueId)
+        if (existing.any { it.userId == userId }) return
+        val limit = queue.maxQueueSize ?: queue.size.takeIf { it > 0 }
+        check(limit == null || existing.size < limit) { "This queue is full" }
+        // A stable UID path prevents multiple rows for repeated joins.
+        val entry = UserQueue(
+            id = userId, queueId = queueId, userId = userId,
             status = UserQueueStatus.JOINED,
             joinedAt = Clock.System.now().toEpochMilliseconds()
         )
-        userQueuesRef.child(queueId).child(userQueueId).setValue(userQueue)
+        userQueuesRef.child(queueId).child(userId).setValue(entry)
     }
 
     override suspend fun leaveUserQueue(queueId: String, userId: String) {
-        userQueuesRef.child(queueId).child(userId).removeValue()
+        // Also handles entries written by older versions using push IDs.
+        require(userId == currentUserId) { "Please sign in again" }
+        val matches = getUserQueues(queueId).filter { it.userId == userId }
+        check(matches.none { it.startedAt != null }) { "Service is already in progress" }
+        for (entry in matches) {
+            userQueuesRef.child(queueId).child(entry.id)
+                .updateChildren(mapOf("status" to UserQueueStatus.LEFT.name))
+        }
+        preferenceManager.deleteJoinedQueue()
+    }
+
+    @OptIn(ExperimentalTime::class)
+    override suspend fun markArrived(queueId: String, userId: String) {
+        require(userId == currentUserId) { "Please sign in again" }
+        val entry = getUserQueues(queueId).firstOrNull { it.userId == userId }
+            ?: error("You are no longer in this queue")
+        if (entry.arrivedAt == null) {
+            userQueuesRef.child(queueId).child(entry.id)
+                .updateChildren(mapOf("arrivedAt" to Clock.System.now().toEpochMilliseconds()))
+        }
+    }
+
+    @OptIn(ExperimentalTime::class)
+    override suspend fun startService(queueId: String, userQueueId: String) {
+        requireQueueOwner(queueId)
+        val entries = getUserQueues(queueId)
+        check(entries.firstOrNull()?.id == userQueueId) { "Serve the first customer in line" }
+        val entry = entries.first()
+        check(entry.arrivedAt != null) { "Customer must check in first" }
+        if (entry.startedAt == null) {
+            userQueuesRef.child(queueId).child(entry.id)
+                .updateChildren(mapOf("startedAt" to Clock.System.now().toEpochMilliseconds()))
+        }
     }
 
     override suspend fun getUserQueues(queueId: String): List<UserQueue> {
         val snapshot = userQueuesRef.child(queueId).valueEvents.first()
         return snapshot.children.map { it.value<UserQueue>() }
             .filter { it.status == UserQueueStatus.JOINED }
-            .sortedBy { it.joinedAt }
+            .sortedWith(compareBy<UserQueue> { it.joinedAt }.thenBy { it.id })
     }
 
     override suspend fun getUserQueueSize(queueId: String): Int {
@@ -170,56 +217,37 @@ class QueueRepositoryImpl(
         val sortedQueues = snapshot.children
             .map { it.value<UserQueue>() }
             .filter { it.status == UserQueueStatus.JOINED }
-            .sortedBy { it.joinedAt }
+            .sortedWith(compareBy<UserQueue> { it.joinedAt }.thenBy { it.id })
 
         return sortedQueues.indexOfFirst { it.userId == userId } + 1
     }
 
     // ------------------ 🔹 Queue Progress ------------------
     @OptIn(ExperimentalTime::class)
-    private suspend fun markNextUserStarted(queueId: String) {
-        val snapshot = userQueuesRef.child(queueId).valueEvents.first()
-        val nextUser = snapshot.children
-            .map { it.value<UserQueue>() }
-            .filter { it.status == UserQueueStatus.JOINED && it.startedAt == null }
-            .minByOrNull { it.joinedAt }
-
-        nextUser?.let { user ->
-            val timestamp = Clock.System.now().toEpochMilliseconds()
-            userQueuesRef.child(queueId).child(user.id)
-                .updateChildren(mapOf("startedAt" to timestamp))
-        }
-    }
-
-    @OptIn(ExperimentalTime::class)
     override suspend fun markUserQueueCompleted(queueId: String, userQueueId: String) {
-        val snapshot = userQueuesRef.child(queueId).child(userQueueId).valueEvents
-        val userQueue = snapshot.first().value<UserQueue>()
-
-        val completedAt = Clock.System.now().toEpochMilliseconds()
-        val startedAt = userQueue.startedAt ?: userQueue.joinedAt
-        val serviceTime = completedAt - startedAt
-
-        userQueuesRef.child(queueId).child(userQueueId)
-            .updateChildren(mapOf("status" to UserQueueStatus.COMPLETED.name))
-
-        val historyDoc = firestore.collection(FirestoreCollections.QUEUE_HISTORY)
-            .document(queueId)
-            .collection(FirestoreCollections.USERS)
-            .document(userQueue.userId)
-
+        requireQueueOwner(queueId)
+        val ref = userQueuesRef.child(queueId).child(userQueueId)
+        val entry = ref.valueEvents.first().value<UserQueue>()
+        // Keep the timestamp stable across retries so history writes are idempotent.
+        val completedAt = entry.completedAt ?: Clock.System.now().toEpochMilliseconds()
+        val startedAt = entry.startedAt ?: error("Start service before completing it")
+        if (entry.status != UserQueueStatus.COMPLETED) {
+            check(getUserQueues(queueId).firstOrNull()?.id == userQueueId) {
+                "Complete the current customer first"
+            }
+            ref.updateChildren(mapOf(
+                "status" to UserQueueStatus.COMPLETED.name,
+                "completedAt" to completedAt
+            ))
+        }
         val history = UserQueueHistory(
-            id = userQueue.id,
-            queueId = queueId,
-            userId = userQueue.userId,
-            joinedAt = userQueue.joinedAt,
-            startedAt = startedAt,
-            completedAt = completedAt,
-            serviceTime = serviceTime
+            id = entry.id, queueId = queueId, userId = entry.userId,
+            joinedAt = entry.joinedAt, startedAt = startedAt,
+            completedAt = completedAt, serviceTime = (completedAt - startedAt).coerceAtLeast(1)
         )
-
-        historyDoc.set(history)
-        markNextUserStarted(queueId)
+        firestore.collection(FirestoreCollections.QUEUE_HISTORY).document(queueId)
+            .collection(FirestoreCollections.USERS)
+            .document(entry.id + "_" + entry.joinedAt).set(history)
     }
 
     // ------------------ 🔹 Observers ------------------
@@ -228,7 +256,7 @@ class QueueRepositoryImpl(
             .map { snapshot ->
                 snapshot.children.map { it.value<UserQueue>() }
                     .filter { it.status == UserQueueStatus.JOINED }
-                    .sortedBy { it.joinedAt }
+                    .sortedWith(compareBy<UserQueue> { it.joinedAt }.thenBy { it.id })
             }
     }
 
@@ -238,7 +266,7 @@ class QueueRepositoryImpl(
             .flatMapLatest { snapshot ->
                 val userQueues = snapshot.children.map { it.value<UserQueue>() }
                     .filter { it.status == UserQueueStatus.JOINED }
-                    .sortedBy { it.joinedAt }
+                    .sortedWith(compareBy<UserQueue> { it.joinedAt }.thenBy { it.id })
 
                 flow {
                     val list = userQueues.map { queue ->
@@ -246,7 +274,7 @@ class QueueRepositoryImpl(
                             .where { "id" equalTo queue.userId }
                             .get()
                         val queues = userSnapshot.documents.map { it.data<User>() }
-                        queue to queues.first()
+                        queue to queues.firstOrNull()
                     }
                     emit(list)
                 }
@@ -259,7 +287,7 @@ class QueueRepositoryImpl(
                 snapshot.children
                     .map { it.value<UserQueue>() }
                     .filter { it.status == UserQueueStatus.JOINED }
-                    .sortedBy { it.joinedAt }
+                    .sortedWith(compareBy<UserQueue> { it.joinedAt }.thenBy { it.id })
                     .indexOfFirst { it.userId == userId } + 1
             }
     }
@@ -274,12 +302,15 @@ class QueueRepositoryImpl(
         val histories = snapshot.documents.map { it.data<UserQueueHistory>() }
         if (histories.isEmpty()) return getQueue(queueId).avgServiceTime
 
-        val avgServiceTime = histories.map { it.serviceTime }.average()
+        val avgServiceTime = histories.map { it.serviceTime }.filter { it > 0 }.takeIf { it.isNotEmpty() }?.average()
+            ?: return getQueue(queueId).avgServiceTime
         return avgServiceTime.toLong()
     }
 
     // ------------------ 🔹 Misc ------------------
     override suspend fun fetchUserQByUserId(userId: String): UserQueue? {
-        return null
+        // The saved pointer avoids downloading every business queue.
+        val queueId = preferenceManager.getJoinedQueue() ?: return null
+        return getUserQueues(queueId).firstOrNull { it.userId == userId }
     }
 }

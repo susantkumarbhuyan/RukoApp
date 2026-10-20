@@ -1,5 +1,7 @@
 package com.ruko.system.presentation.screens.owner.queue
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -60,7 +62,7 @@ fun QueueEditScreen(
             name = item.name
             type = item.type
             size = item.size.toString()
-            status = QueueStatus.valueOf(item.status)
+            status = QueueStatus.entries.firstOrNull { it.name == item.status } ?: QueueStatus.IN_ACTIVE
             avgServiceTimeMin = TimeUtils.millisToMinutes(item.avgServiceTime).toString()
         }
     }
@@ -106,7 +108,8 @@ fun QueueEditScreen(
                     Modifier
                         .fillMaxSize()
                         .padding(padding)
-                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState())
+                        .padding(24.dp)
                 ) {
                     QueueForm(
                         name, { name = it },
@@ -125,14 +128,16 @@ fun QueueEditScreen(
                                 type = type,
                                 size = size.toIntOrNull() ?: 0,
                                 status = status.name,
+                                isActive = status == QueueStatus.ACTIVE,
                                 avgServiceTime = TimeUtils.minutesToMillis(
                                     avgServiceTimeMin.toLongOrNull() ?: 0
                                 )
                             )
-                            viewModel.editQueue(updated)
-                            navigateBack(queueId)
+                            viewModel.editQueue(updated) { navigateBack(queueId) }
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = name.isNotBlank() && (avgServiceTimeMin.toLongOrNull() ?: 0) in 1L..1440L &&
+                            (size.toIntOrNull() ?: 0) in 1..10000
                     ) {
                         Text("Save Changes")
                     }

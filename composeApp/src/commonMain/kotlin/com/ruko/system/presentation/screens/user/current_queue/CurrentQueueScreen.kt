@@ -1,39 +1,19 @@
 package com.ruko.system.presentation.screens.user.current_queue
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.ruko.system.presentation.componnts.QueueMetric
+import com.ruko.system.presentation.componnts.QueueNotice
+import com.ruko.system.utils.QueueTiming
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,102 +21,84 @@ import org.koin.compose.viewmodel.koinViewModel
 fun CurrentQueueScreen(
     queueId: String,
     onLeftQueue: () -> Unit,
-    viewModel: CurrentQueueViewModel = koinViewModel(),
+    viewModel: CurrentQueueViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val busy by viewModel.busy.collectAsState()
+    val actionError by viewModel.actionError.collectAsState()
+    var confirmLeave by remember { mutableStateOf(false) }
+    LaunchedEffect(queueId) { viewModel.loadQueue(queueId) }
 
-    LaunchedEffect(queueId) {
-        viewModel.loadQueue(queueId)
+    if (confirmLeave) {
+        AlertDialog(onDismissRequest = { confirmLeave = false },
+            title = { Text("Leave this queue?") },
+            text = { Text("Your place will be released. Joining again puts you at the end.") },
+            confirmButton = {
+                TextButton(enabled = !busy, onClick = {
+                    confirmLeave = false
+                    viewModel.leaveQueue(queueId, onLeftQueue)
+                }) { Text("Leave queue") }
+            },
+            dismissButton = { TextButton(onClick = { confirmLeave = false }) { Text("Stay") } })
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Current Queue") },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground
-                )
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            contentAlignment = Alignment.TopCenter
-        ) {
-            when (state) {
-                is CurrentQueueState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-
+    Scaffold(topBar = { TopAppBar(title = { Text("Your place in line") }) }) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)
+            .verticalScroll(rememberScrollState()).padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            when (val data = state) {
+                CurrentQueueState.Loading -> CircularProgressIndicator()
                 is CurrentQueueState.Error -> {
-                    val message = (state as CurrentQueueState.Error).message
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(message, color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.loadQueue(queueId) }) {
-                            Text("Retry")
-                        }
-                    }
+                    Text(data.message, color = MaterialTheme.colorScheme.error)
+                    Button(onClick = { viewModel.loadQueue(queueId) }) { Text("Try again") }
                 }
-
+                CurrentQueueState.Finished -> {
+                    QueueNotice("You're no longer in line",
+                        "Your visit may have been completed or your place removed.")
+                    Button(onClick = onLeftQueue) { Text("Back to home") }
+                }
                 is CurrentQueueState.Success -> {
-                    val data = state as CurrentQueueState.Success
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(6.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .padding(24.dp)
-                                .fillMaxWidth(),
+                    Text(data.queue.name, style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer) {
+                        Column(Modifier.padding(32.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Groups,
-                                contentDescription = "Queue Icon",
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-
-                            Text(
-                                text = data.queue.name,
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            QueueDetails(data)
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Button(
-                                onClick = { viewModel.leaveQueue(queueId, onLeftQueue) },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                                    contentDescription = "Leave Queue"
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(text = "Leave Queue")
-                            }
+                            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(if (data.serving) "SERVICE IN PROGRESS" else "YOUR POSITION",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            Text(data.currentPosition.toString(),
+                                style = MaterialTheme.typography.displayLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            Text(if (data.currentPosition == 1) "You're at the front"
+                                else "${data.currentPosition - 1} people ahead",
+                                color = MaterialTheme.colorScheme.onPrimaryContainer)
                         }
                     }
-
-
+                    QueueDetails(data)
+                    QueueNotice(
+                        if (data.arrived) "You're checked in" else "Let the business know you've arrived",
+                        if (data.arrived) "Keep this screen handy. The business will start your service."
+                        else "Tap below once you are at the salon or clinic."
+                    )
+                    actionError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                    if (!data.arrived) {
+                        Button(onClick = { viewModel.arrive(queueId) }, enabled = !busy,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
+                            Text(if (busy) "Updating…" else "I've arrived")
+                        }
+                    }
+                    Text("Waiting times are estimates and can change as service progresses.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center)
+                    OutlinedButton(onClick = { confirmLeave = true }, enabled = !busy && !data.serving,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                        Text("Leave queue")
+                    }
                 }
             }
         }
@@ -145,24 +107,10 @@ fun CurrentQueueScreen(
 
 @Composable
 fun QueueDetails(data: CurrentQueueState.Success) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "Business: ${data.queue.name}",
-            style = MaterialTheme.typography.bodyLarge
-        )
-        Text(
-            text = "Queue Size: ${data.queue.size}",
-            style = MaterialTheme.typography.bodyMedium
-        )
-        Text(
-            text = "Current Position: ${data.currentPosition}",
-            style = MaterialTheme.typography.bodyMedium
-        )
-        Text(
-            text = "Estimated Wait: ~${data.estimatedTime} min",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold
-        )
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        QueueMetric("Estimated wait",
+            if (data.serving) "In service" else "~${QueueTiming.minutesCeiling(data.estimatedTime)} min",
+            Modifier.weight(1f))
+        QueueMetric("People in line", data.queueLength.toString(), Modifier.weight(1f))
     }
 }

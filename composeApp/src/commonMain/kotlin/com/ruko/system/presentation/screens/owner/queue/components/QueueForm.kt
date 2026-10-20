@@ -124,7 +124,7 @@ fun QueueForm(
         OutlinedTextField(
             value = size,
             onValueChange = { onSizeChange(it.filter(Char::isDigit)) },
-            label = { Text("Size") },
+            label = { Text("Maximum people in line") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
         )
@@ -132,7 +132,7 @@ fun QueueForm(
         OutlinedTextField(
             value = avgServiceTime,
             onValueChange = { onAvgServiceTimeChange(it.filter(Char::isDigit)) },
-            label = { Text("Average Service Time (sec)") },
+            label = { Text("Average service time (minutes)") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
         )

@@ -52,7 +52,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ruko.system.domain.model.Owner
-import com.ruko.system.presentation.screens.owner.SectionHeader
 import org.koin.compose.viewmodel.koinViewModel
 
 // Updated Composable function for the Profile Screen

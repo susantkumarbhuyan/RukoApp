@@ -35,6 +35,8 @@ interface QueueRepository {
     suspend fun joinUserQueue(queueId: String, userId: String)
     fun observeUserQueue(queueId: String): Flow<List<UserQueue>>
     fun observeUserQueueWithUserInfo(queueId: String): Flow<List<Pair<UserQueue, User?>>>
+    suspend fun markArrived(queueId: String, userId: String)
+    suspend fun startService(queueId: String, userQueueId: String)
     suspend fun markUserQueueCompleted(queueId: String, userQueueId: String)
     fun observeUserQueuePosition(queueId: String, userId: String): Flow<Int>
     suspend fun getAverageServiceTime(queueId: String): Long

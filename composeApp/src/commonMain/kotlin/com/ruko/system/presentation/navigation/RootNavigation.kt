@@ -1,5 +1,7 @@
 package com.ruko.system.presentation.navigation
 
+import com.ruko.system.data.local.preference.SessionManager
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.fadeIn
@@ -149,7 +151,7 @@ fun RootNavigation() {
 
 // Wait until both values are loaded
 
-        if (isLoggedIn != null && (isLoggedIn == false || userType != null)) {
+        if (isLoggedIn != null && isOnBoardingDone != null && (isLoggedIn == false || userType != null)) {
             val startDestination = when {
                 isLoggedIn == true || isOnBoardingDone == true -> {
                     when (userType) {

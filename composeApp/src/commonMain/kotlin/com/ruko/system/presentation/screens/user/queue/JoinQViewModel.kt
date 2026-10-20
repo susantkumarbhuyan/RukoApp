@@ -16,7 +16,7 @@ sealed class JoinQueueState {
     data class Success(
         val queue: Queue,
         val currentPosition: Int, // 1-based
-        val estimatedTime: Long // in minutes
+        val estimatedTime: Long // milliseconds
     ) : JoinQueueState()
 
     data class Error(val message: String) : JoinQueueState()
@@ -38,12 +38,14 @@ class JoinQViewModel(
                 val queue = repository.getQueue(qrQueue.queueId)
                 val currentPosition = (repository.getUserQueueSize(qrQueue.queueId) + 1)
                 val estimatedTime =
-                    currentPosition * queue.avgServiceTime / 60 // assuming avgServiceTime in seconds, convert to minutes
+                    (currentPosition - 1).coerceAtLeast(0) * queue.avgServiceTime
                 _state.value = JoinQueueState.Success(
                     queue = queue,
                     currentPosition = currentPosition,
                     estimatedTime = estimatedTime
                 )
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _state.value = JoinQueueState.Error(
                     e.message ?: "Failed to load queue"
@@ -52,19 +54,25 @@ class JoinQViewModel(
         }
     }
 
+    private val _joining = MutableStateFlow(false)
+    val joining = _joining.asStateFlow()
+
     fun joinQueue(qrQueue: QRQueue, onJoined: () -> Unit) {
+        if (_joining.value) return
+        _joining.value = true
         viewModelScope.launch {
             try {
                 val joinedQueueId = preferenceManager.getJoinedQueue()
-                if (joinedQueueId != null) {
+                if (joinedQueueId != null && repository.getUserQueuePosition(
+                        joinedQueueId, repository.currentUserId) > 0) {
                     _state.value = JoinQueueState.Error(
                         "You are already in a queue"
                     )
                     return@launch
                 }
 
-                val userId = preferenceManager.getUserProfile()?.id
-                    ?: throw IllegalStateException("User not found")
+                val userId = repository.currentUserId.takeIf { it.isNotBlank() }
+                    ?: throw IllegalStateException("Please sign in again")
 
                 repository.joinUserQueue(
                     queueId = qrQueue.queueId,
@@ -73,10 +81,14 @@ class JoinQViewModel(
                 preferenceManager.setJoinedQueue(qrQueue.queueId)
 
                 onJoined()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _state.value = JoinQueueState.Error(
                     e.message ?: "Failed to join queue"
                 )
+            } finally {
+                _joining.value = false
             }
         }
     }

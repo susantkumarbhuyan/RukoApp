@@ -9,6 +9,12 @@ data class Queue(
     val businessId: String = "",          // which business created it
     val name: String = "",                // e.g., "Doctor OPD"
     val description: String = "",
+    // Compatibility with the existing owner forms and stored queue documents.
+    val storeId: String = businessId,
+    val type: String = "",
+    val status: String = "ACTIVE",
+    val size: Int = 0,
+    val time: Int = 0,
     val createdAt: Long = currentTimeInMilli(),           // ISO datetime
     val isActive: Boolean = true,
     val dailyLimit: Int = 100,            // default tokens per day

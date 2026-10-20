@@ -45,7 +45,7 @@ sqlite = "2.5.2"
 room = "2.8.0-rc01"
 #Navigation
 navigationCompose = "2.9.0-beta05"
-backhandler = ":1.8.0‑alpha03"
+backhandler = "1.8.0-alpha03"
 mokoPermission = "0.20.0"
 
 splashScreen = "1.2.0-rc01"

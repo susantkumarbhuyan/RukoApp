@@ -50,51 +50,43 @@ class UserHomeViewModel(
         }
     }
 
+    fun refresh() {
+        loadQueueState()
+    }
+
+    private var queueJob: kotlinx.coroutines.Job? = null
     private fun loadQueueState() {
-        viewModelScope.launch {
+        queueJob?.cancel()
+        queueJob = viewModelScope.launch {
             _queueState.value = UserHomeState.Loading
             try {
-                var queueId = preferenceManager.getJoinedQueue()
-
-                // If no saved queueId, try to fetch from DB
+                val queueId = preferenceManager.getJoinedQueue()
                 if (queueId.isNullOrBlank()) {
-                    val user = preferenceManager.getUserProfile()
-                    if (user != null) {
-                        val joinedQueue = repository.fetchUserQByUserId(user.id)
-
-                        queueId = joinedQueue?.queueId
-                    }
-
-                    if (queueId.isNullOrBlank()) {
+                    _queueState.value = UserHomeState.NoQueue
+                    return@launch
+                }
+                val userId = repository.currentUserId
+                val queue = repository.getQueue(queueId)
+                val average = repository.getAverageServiceTime(queueId)
+                repository.observeUserQueue(queueId).collect { entries ->
+                    val position = com.ruko.system.utils.QueueTiming.position(entries, userId)
+                    if (position == 0) {
+                        preferenceManager.deleteJoinedQueue()
                         _queueState.value = UserHomeState.NoQueue
-                        return@launch
+                    } else {
+                        _queueState.value = UserHomeState.JoinedQueue(
+                            queueId, queue.name, position, entries.size,
+                            com.ruko.system.utils.QueueTiming.waitMillis(
+                                entries, userId, average,
+                                com.ruko.system.utils.TimeUtils.currentTimeInMilli()
+                            )
+                        )
                     }
                 }
-
-                // Run parallel calls
-                coroutineScope {
-                    val queueDeferred = async { repository.getQueue(queueId!!) }
-                    val sizeDeferred = async { repository.getUserQueueSize(queueId!!) }
-                    val avgTimeDeferred = async { repository.getAverageServiceTime(queueId!!) }
-
-                    val queue = queueDeferred.await()
-                    val size = sizeDeferred.await()
-                    val avgServiceTime = avgTimeDeferred.await() // in ms
-
-                    // For now, assume user is at the end of the queue
-                    val currentPosition = size // 0-based size means user is next
-                    val estimatedTime = currentPosition * avgServiceTime
-
-                    _queueState.value = UserHomeState.JoinedQueue(
-                        queueId = queueId!!,
-                        queueName = queue.name,
-                        currentPosition = currentPosition,
-                        queueLength = size,
-                        estimatedTime = estimatedTime
-                    )
-                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _queueState.value = UserHomeState.Error(e.message ?: "Failed to load queue")
+                _queueState.value = UserHomeState.Error(e.message ?: "Could not load queue")
             }
         }
     }

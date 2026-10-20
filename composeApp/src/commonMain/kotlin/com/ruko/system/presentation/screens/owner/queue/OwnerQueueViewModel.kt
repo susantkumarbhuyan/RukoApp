@@ -43,11 +43,12 @@ class OwnerQueueViewModel(
     }
 
     // Edit queue
-    fun editQueue(updatedQueue: Queue) {
+    fun editQueue(updatedQueue: Queue, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             try {
                 repository.updateQueue(updatedQueue)
                 _queueState.value = QueueUiState.Success(updatedQueue)
+                onSuccess()
             } catch (e: Exception) {
                 _queueState.value = QueueUiState.Error("Failed to update queue: ${e.message}")
             }

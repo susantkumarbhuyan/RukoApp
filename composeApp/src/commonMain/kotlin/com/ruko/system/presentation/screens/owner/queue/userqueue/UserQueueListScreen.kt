@@ -1,38 +1,15 @@
 package com.ruko.system.presentation.screens.owner.queue.userqueue
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -44,123 +21,59 @@ fun UserQueueListScreen(
     viewModel: UserQueueViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-
-    // Start observing when entering screen
-    LaunchedEffect(queueId) {
-        viewModel.observeUserQueues(queueId)
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Queue Users") },
-                navigationIcon = {
-                    IconButton(onClick = navigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        when (state) {
-            is UserQueueUiState.Loading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+    val busy by viewModel.busy.collectAsState()
+    val error by viewModel.actionError.collectAsState()
+    LaunchedEffect(queueId) { viewModel.observeUserQueues(queueId) }
+    Scaffold(topBar = {
+        TopAppBar(title = { Text("Live queue") }, navigationIcon = {
+            IconButton(onClick = navigateBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
             }
-
-            is UserQueueUiState.Empty -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No users in queue")
+        })
+    }) { padding ->
+        LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            error?.let { message -> item { Text(message, color = MaterialTheme.colorScheme.error) } }
+            when (val data = state) {
+                UserQueueUiState.Loading -> item { CircularProgressIndicator() }
+                UserQueueUiState.Empty -> item {
+                    Text("All caught up", style = MaterialTheme.typography.headlineSmall)
+                    Text("New customers appear here as they join.")
                 }
-            }
-
-            is UserQueueUiState.Error -> {
-                val msg = (state as UserQueueUiState.Error).message
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Error: $msg", color = MaterialTheme.colorScheme.error)
+                is UserQueueUiState.Error -> item {
+                    Text(data.message, color = MaterialTheme.colorScheme.error)
+                    TextButton(onClick = { viewModel.observeUserQueues(queueId) }) { Text("Try again") }
                 }
-            }
-
-            is UserQueueUiState.Success -> {
-                val queues = (state as UserQueueUiState.Success).queues
-
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(queues) { userQueuePair ->
-                        val (queue, user) = userQueuePair // Destructure the Pair
-
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                // User Info Column on the left
-                                Column(
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(
-                                        text = "Name: ${user?.name ?: "Unknown"}",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(Modifier.height(4.dp))
-                                    Text(
-                                        text = "Joined At: ${queue.joinedAt}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                            alpha = 0.7f
-                                        )
-                                    )
-                                }
-
-                                // Action Button on the right
-                                Button(
-                                    onClick = {
-                                        viewModel.markCompleted(
-                                            queue.queueId,
-                                            queue.id
-                                        )
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                    shape = RoundedCornerShape(50) // Pill shape
-                                ) {
-                                    Text("Mark Complete")
+                is UserQueueUiState.Success -> {
+                    item { Text("${data.queues.size} people in line",
+                        style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
+                    itemsIndexed(data.queues, key = { _, pair -> pair.first.id }) { index, (entry, user) ->
+                        OutlinedCard(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp)) {
+                            Column(Modifier.padding(20.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text(if (index == 0) "UP NEXT" else "POSITION ${index + 1}",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary)
+                                Text(user?.name?.ifBlank { "Customer" } ?: "Customer",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold)
+                                Text(when {
+                                    entry.startedAt != null -> "Service in progress"
+                                    entry.arrivedAt != null -> "Checked in"
+                                    else -> "Not checked in"
+                                }, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                if (index == 0) {
+                                    Button(onClick = {
+                                        if (entry.startedAt == null) viewModel.startService(queueId, entry.id)
+                                        else viewModel.markCompleted(queueId, entry.id)
+                                    }, enabled = !busy && entry.arrivedAt != null,
+                                        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                                        Text(if (entry.startedAt == null) "Start service" else "Complete service")
+                                    }
                                 }
                             }
                         }
                     }
-
                 }
             }
         }
