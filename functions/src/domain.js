@@ -145,6 +145,7 @@ export function applyCommand(source, command, context) {
   const notify = (userId, id, kind, position = 0) => result.notifications.push({
     uid: userId, queueId: queue.id, ticketId: id, kind, position,
     estimatedMillis: waitingMillis(runtime.order, tickets, id, runtime.averageMillis, now),
+    arrived: tickets[id]?.arrivedAt != null,
     revision: runtime.revision, createdAt: now
   });
   if (action === "JOIN") notify(uid, touched.id, "JOINED", runtime.order.indexOf(touched.id) + 1);

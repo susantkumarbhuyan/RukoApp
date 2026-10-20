@@ -34,7 +34,7 @@ service cloud.firestore {
         d.businessType is string && d.businessType.size() <= 100 &&
         d.phoneNumber is string && d.phoneNumber.size() <= 30 &&
         d.address is string && d.address.size() <= 500 &&
-        d.email == request.auth.token.email && d.get('isVerified', false) == false;
+        d.email == request.auth.token.email && d.get('isVerified', false) is bool;
     }
     match /customers/{uid} {
       allow get: if own(uid) || customerOwner(uid);
@@ -45,7 +45,10 @@ service cloud.firestore {
     match /stores/{uid} {
       allow get: if own(uid);
       allow list: if false;
-      allow create, update: if own(uid) && validStore(uid);
+      allow create: if own(uid) && validStore(uid) &&
+        request.resource.data.get('isVerified', false) == false;
+      allow update: if own(uid) && validStore(uid) &&
+        request.resource.data.get('isVerified', false) == resource.data.get('isVerified', false);
       allow delete: if false;
     }
     match /queues/{qid} {

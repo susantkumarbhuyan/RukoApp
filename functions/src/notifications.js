@@ -9,7 +9,15 @@ export function messageText(job) {
     case "ARRIVED": return { title: "A customer has arrived", body: "Open RUKO to view your live queue." };
     case "STARTED": return { title: "Your service has started", body: "Your turn is now in progress." };
     case "COMPLETED": return { title: "Your visit is complete", body: "Thank you for using RUKO." };
-    case "JOINED": return { title: "You're in line", body: "Open RUKO to follow your position and check in." };
+    case "JOINED":
+      return job.position === 1
+        ? { title: "You're next", body: "Please arrive and check in. Open RUKO to view your queue." }
+        : { title: "You're in line", body: "Open RUKO to follow your position and check in." };
+    case "PROGRESS":
+      if (job.position <= 3) return job.arrived
+        ? { title: "Your turn is approaching", body: "You're checked in. Keep an eye on your live queue." }
+        : { title: "Your turn is approaching", body: "Please arrive and check in. Open RUKO for your live position." };
+      return { title: "Your queue has moved", body: "Open RUKO for your latest position and waiting time." };
     default: return { title: "Your queue has moved", body: "Open RUKO for your latest position and waiting time." };
   }
 }
