@@ -256,6 +256,17 @@ class DataStorePreferenceManager(
         return dataStore.data.first()[JOINED_QUEUE]
     }
 
+    override suspend fun getPendingRequest(key: String): String? =
+        dataStore.data.first()[stringPreferencesKey("pending_request_" + key)]
+
+    override suspend fun putPendingRequest(key: String, id: String) {
+        dataStore.edit { it[stringPreferencesKey("pending_request_" + key)] = id }
+    }
+
+    override suspend fun clearPendingRequest(key: String) {
+        dataStore.edit { it.remove(stringPreferencesKey("pending_request_" + key)) }
+    }
+
     override suspend fun deleteJoinedQueue() {
         dataStore.edit { prefs ->
             prefs.remove(JOINED_QUEUE)

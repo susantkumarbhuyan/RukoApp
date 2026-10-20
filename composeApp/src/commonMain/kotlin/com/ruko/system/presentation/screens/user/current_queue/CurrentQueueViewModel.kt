@@ -32,14 +32,13 @@ class CurrentQueueViewModel(
                 val userId = repository.currentUserId.takeIf { it.isNotBlank() }
                     ?: error("Please sign in again")
                 val queue = repository.getQueue(queueId)
-                val average = repository.getAverageServiceTime(queueId)
                 val clock = flow {
                     while (true) {
                         emit(TimeUtils.currentTimeInMilli())
                         delay(15_000)
                     }
                 }
-                combine(repository.observeUserQueue(queueId), clock) { entries, now ->
+                combine(repository.observeUserQueue(queueId), clock, repository.observeAverageServiceTime(queueId)) { entries, now, average ->
                     val position = QueueTiming.position(entries, userId)
                     val own = entries.firstOrNull { it.userId == userId }
                     if (position == 0) CurrentQueueState.Finished

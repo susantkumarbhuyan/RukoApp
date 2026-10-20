@@ -60,15 +60,20 @@ class UserHomeViewModel(
         queueJob = viewModelScope.launch {
             _queueState.value = UserHomeState.Loading
             try {
-                val queueId = preferenceManager.getJoinedQueue()
+                val active = repository.fetchUserQByUserId(repository.currentUserId)
+                val queueId = active?.queueId
                 if (queueId.isNullOrBlank()) {
+                    preferenceManager.deleteJoinedQueue()
                     _queueState.value = UserHomeState.NoQueue
                     return@launch
                 }
+                preferenceManager.setJoinedQueue(queueId)
                 val userId = repository.currentUserId
                 val queue = repository.getQueue(queueId)
-                val average = repository.getAverageServiceTime(queueId)
-                repository.observeUserQueue(queueId).collect { entries ->
+                kotlinx.coroutines.flow.combine(
+                    repository.observeUserQueue(queueId),
+                    repository.observeAverageServiceTime(queueId)
+                ) { entries, average -> entries to average }.collect { (entries, average) ->
                     val position = com.ruko.system.utils.QueueTiming.position(entries, userId)
                     if (position == 0) {
                         preferenceManager.deleteJoinedQueue()

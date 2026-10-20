@@ -52,6 +52,7 @@ splashScreen = "1.2.0-rc01"
 qrKit = "3.1.2"
 
 [libraries]
+firebase-functions = { module = "dev.gitlive:firebase-functions", version.ref = "firebaseAnalytics" }
 
 #WorkManager
 firebase-auth = { module = "dev.gitlive:firebase-auth", version.ref = "firebaseAnalytics" }

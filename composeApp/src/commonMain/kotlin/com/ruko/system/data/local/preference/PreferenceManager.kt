@@ -44,6 +44,10 @@ interface PreferenceManager {
     suspend fun setJoinedQueue(queueId: String)
     suspend fun getJoinedQueue(): String?
 
+    suspend fun getPendingRequest(key: String): String?
+    suspend fun putPendingRequest(key: String, id: String)
+    suspend fun clearPendingRequest(key: String)
+
     suspend fun deleteJoinedQueue()
 
 }

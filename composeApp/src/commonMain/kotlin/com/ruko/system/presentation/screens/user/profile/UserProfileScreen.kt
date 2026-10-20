@@ -131,7 +131,7 @@ fun UserProfileScreen(
 
                     // Logout button
                     Button(
-                        onClick = onLogout,
+                        onClick = { viewModel.logout(onLogout) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),

@@ -51,6 +51,7 @@ fun CreateQueueScreen(
 ) {
     val queueState by viewModel.queueState.collectAsState()
 
+    val newQueueId = remember { generateUUID() }
     var name by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("") }
     var status by remember { mutableStateOf(QueueStatus.ACTIVE) }
@@ -89,12 +90,13 @@ fun CreateQueueScreen(
             Button(
                 onClick = {
                     val newQueue = Queue(
-                        id = generateUUID(),
+                        id = newQueueId,
                         name = name,
                         type = type,
                         status = status.name,
                         isActive = status == QueueStatus.ACTIVE,
                         size = size.toIntOrNull() ?: 5,
+                        maxQueueSize = size.toIntOrNull() ?: 5,
                         avgServiceTime = (avgServiceTime.toLongOrNull() ?: 10) * 60_000,
                         businessId = storeId,
                         storeId = storeId
@@ -105,7 +107,7 @@ fun CreateQueueScreen(
                 shape = RoundedCornerShape(12.dp),
                 enabled = queueState !is QueueUiState.Loading && name.isNotBlank() &&
                     storeId.isNotBlank() && (avgServiceTime.toLongOrNull() ?: 0) in 1L..1440L &&
-                    (size.toIntOrNull() ?: 0) in 1..10000
+                    (size.toIntOrNull() ?: 0) in 1..200
             ) {
                 if (queueState is QueueUiState.Loading) {
                     CircularProgressIndicator(

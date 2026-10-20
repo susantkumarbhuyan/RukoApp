@@ -1,6 +1,8 @@
 package com.ruko.system
 
 import android.os.Bundle
+import android.content.Intent
+import com.ruko.system.notifications.PushNotifications
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -11,12 +13,25 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.initialize
 
 class MainActivity : ComponentActivity() {
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleNotification(intent)
+    }
+
+    private fun handleNotification(intent: Intent?) {
+        val queueId = intent?.getStringExtra("queueId") ?: return
+        PushNotifications.openQueue(queueId, intent.getStringExtra("kind") ?: "")
+        intent.removeExtra("queueId")
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Firebase.initialize(
             applicationContext
         )
         AndroidContextProvider.initActivity(this)
+        handleNotification(intent)
         setContent {
             val transparent = android.graphics.Color.TRANSPARENT
             val isDarkTheme = isSystemInDarkTheme()

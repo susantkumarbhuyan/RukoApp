@@ -35,6 +35,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.ruko.system.notifications.PushNotifications
+import com.ruko.system.domain.repository.QueueRepository
+import org.koin.compose.koinInject
 import com.ruko.system.presentation.AppViewModel
 import com.ruko.system.presentation.componnts.ExitAlertDialog
 import com.ruko.system.presentation.componnts.ExitApp
@@ -66,6 +69,31 @@ fun RootNavigation() {
 
     val scope = rememberCoroutineScope()
     val navController = rememberNavController()
+
+    val repository: QueueRepository = koinInject()
+    val notificationTarget by PushNotifications.target.collectAsState()
+    LaunchedEffect(notificationTarget, isLoggedIn, userType) {
+        val target = notificationTarget
+        if (target != null && isLoggedIn == true && userType != null) {
+            try {
+                if (userType == SessionManager.UserType.OWNER) {
+                    val queue = repository.getQueue(target.queueId)
+                    if (queue.storeId == repository.currentUserId) {
+                        navController.navigate(Screen.Owner.UserQueueList(target.queueId)) { launchSingleTop = true }
+                    }
+                } else {
+                    val membership = repository.fetchUserQByUserId(repository.currentUserId)
+                    if (membership?.queueId == target.queueId) {
+                        navController.navigate(Screen.User.CurrentQueue(target.queueId)) { launchSingleTop = true }
+                    } else {
+                        snackBarHostState.showSnackbar("This queue visit has ended.")
+                    }
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (_: Exception) { snackBarHostState.showSnackbar("Open your queue from the home screen.") }
+            finally { PushNotifications.consume(target.id) }
+        }
+    }
 
     var showExitDialog by remember { mutableStateOf(false) }
     var exit by remember { mutableStateOf(false) }

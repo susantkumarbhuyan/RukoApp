@@ -9,6 +9,8 @@ data class Queue(
     val businessId: String = "",          // which business created it
     val name: String = "",                // e.g., "Doctor OPD"
     val description: String = "",
+    val timezone: String = "Asia/Kolkata",
+    val schemaVersion: Int = 2,
     // Compatibility with the existing owner forms and stored queue documents.
     val storeId: String = businessId,
     val type: String = "",

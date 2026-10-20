@@ -6,6 +6,16 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A0F300000000000000000001 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = A0F200000000000000000001 /* FirebaseCore */; };
+		A0F300000000000000000002 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = A0F200000000000000000002 /* FirebaseAuth */; };
+		A0F300000000000000000003 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = A0F200000000000000000003 /* FirebaseFirestore */; };
+		A0F300000000000000000004 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = A0F200000000000000000004 /* FirebaseFunctions */; };
+		A0F300000000000000000005 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = A0F200000000000000000005 /* FirebaseMessaging */; };
+		A0F300000000000000000006 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = A0F200000000000000000006 /* FirebaseAnalytics */; };
+		A0F300000000000000000007 /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = A0F200000000000000000007 /* FirebaseAppCheck */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		B9DA97B12DC1472C00A4DA20 /* Ruko.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ruko.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -15,6 +25,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+                Ruko.entitlements,
 			);
 			target = B9DA97B02DC1472C00A4DA20 /* iosApp */;
 		};
@@ -41,6 +52,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A0F300000000000000000001 /* FirebaseCore in Frameworks */,
+				A0F300000000000000000002 /* FirebaseAuth in Frameworks */,
+				A0F300000000000000000003 /* FirebaseFirestore in Frameworks */,
+				A0F300000000000000000004 /* FirebaseFunctions in Frameworks */,
+				A0F300000000000000000005 /* FirebaseMessaging in Frameworks */,
+				A0F300000000000000000006 /* FirebaseAnalytics in Frameworks */,
+				A0F300000000000000000007 /* FirebaseAppCheck in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -85,6 +103,13 @@
 			);
 			name = iosApp;
 			packageProductDependencies = (
+				A0F200000000000000000001 /* FirebaseCore */,
+				A0F200000000000000000002 /* FirebaseAuth */,
+				A0F200000000000000000003 /* FirebaseFirestore */,
+				A0F200000000000000000004 /* FirebaseFunctions */,
+				A0F200000000000000000005 /* FirebaseMessaging */,
+				A0F200000000000000000006 /* FirebaseAnalytics */,
+				A0F200000000000000000007 /* FirebaseAppCheck */,
 			);
 			productName = iosApp;
 			productReference = B9DA97B12DC1472C00A4DA20 /* Ruko.app */;
@@ -102,6 +127,10 @@
 				TargetAttributes = {
 					B9DA97B02DC1472C00A4DA20 = {
 						CreatedOnToolsVersion = 16.2;
+                        SystemCapabilities = {
+                            com.apple.Push = { enabled = 1; };
+                            com.apple.BackgroundModes = { enabled = 1; };
+                        };
 					};
 				};
 			};
@@ -115,6 +144,7 @@
 			mainGroup = B9DA97A82DC1472C00A4DA20;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				A0F100000000000000000001 /* Firebase iOS SDK */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B9DA97B22DC1472C00A4DA20 /* Products */;
@@ -167,6 +197,52 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+        A0F100000000000000000001 /* Firebase iOS SDK */ = {
+            isa = XCRemoteSwiftPackageReference;
+            repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+            requirement = { kind = exactVersion; version = 11.8.0; };
+        };
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+        A0F200000000000000000001 /* FirebaseCore */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = A0F100000000000000000001 /* Firebase iOS SDK */;
+            productName = FirebaseCore;
+        };
+        A0F200000000000000000002 /* FirebaseAuth */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = A0F100000000000000000001 /* Firebase iOS SDK */;
+            productName = FirebaseAuth;
+        };
+        A0F200000000000000000003 /* FirebaseFirestore */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = A0F100000000000000000001 /* Firebase iOS SDK */;
+            productName = FirebaseFirestore;
+        };
+        A0F200000000000000000004 /* FirebaseFunctions */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = A0F100000000000000000001 /* Firebase iOS SDK */;
+            productName = FirebaseFunctions;
+        };
+        A0F200000000000000000005 /* FirebaseMessaging */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = A0F100000000000000000001 /* Firebase iOS SDK */;
+            productName = FirebaseMessaging;
+        };
+        A0F200000000000000000006 /* FirebaseAnalytics */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = A0F100000000000000000001 /* Firebase iOS SDK */;
+            productName = FirebaseAnalytics;
+        };
+        A0F200000000000000000007 /* FirebaseAppCheck */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = A0F100000000000000000001 /* Firebase iOS SDK */;
+            productName = FirebaseAppCheck;
+        };
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		B9DA97BD2DC1472D00A4DA20 /* Debug */ = {
@@ -293,16 +369,18 @@
 			baseConfigurationReferenceAnchor = B9DA98002DC14AA900A4DA20 /* Configuration */;
 			baseConfigurationReferenceRelativePath = Config.xcconfig;
 			buildSettings = {
+                APS_ENVIRONMENT = development;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
+                CODE_SIGN_ENTITLEMENTS = iosApp/Ruko.entitlements;
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
 				DEVELOPMENT_TEAM = "${TEAM_ID}";
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)\n$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+					"$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iosApp/Info.plist;
@@ -326,16 +404,18 @@
 			baseConfigurationReferenceAnchor = B9DA98002DC14AA900A4DA20 /* Configuration */;
 			baseConfigurationReferenceRelativePath = Config.xcconfig;
 			buildSettings = {
+                APS_ENVIRONMENT = production;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
+                CODE_SIGN_ENTITLEMENTS = iosApp/Ruko.entitlements;
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
 				DEVELOPMENT_TEAM = "${TEAM_ID}";
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)\n$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+					"$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iosApp/Info.plist;

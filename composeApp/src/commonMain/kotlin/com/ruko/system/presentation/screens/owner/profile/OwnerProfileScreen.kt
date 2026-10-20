@@ -128,8 +128,7 @@ fun OwnerProfileScreen(
                     ProfileContent(
                         profile = profile,
                         onLogout = {
-                            viewModel.logout()
-                            onLogout()
+                            viewModel.logout(onLogout)
                         }
                     )
                 }

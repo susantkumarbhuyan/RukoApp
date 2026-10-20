@@ -124,7 +124,7 @@ fun QueueForm(
         OutlinedTextField(
             value = size,
             onValueChange = { onSizeChange(it.filter(Char::isDigit)) },
-            label = { Text("Maximum people in line") },
+            label = { Text("Maximum people in line (1–200)") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
         )

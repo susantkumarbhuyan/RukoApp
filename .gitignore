@@ -20,3 +20,13 @@ captures
 # Server credentials must never be bundled in the application
 **/assets/key.json
 **/*service-account*.json
+
+# Local backend dependencies, emulators, and credentials
+functions/node_modules/
+.firebase/
+*-debug.log
+functions/.env*
+functions/coverage/
+**/*.p8
+**/*.p12
+**/*.mobileprovision

@@ -10,6 +10,7 @@ data class UserQueue(
     val userId: String = "",
     val status: UserQueueStatus = UserQueueStatus.WAITING,
     val joinedAt: Long,
+    val sequence: Long = 0,
     val startedAt: Long? = null,
     val arrivedAt: Long? = null,
     val completedAt: Long? = null

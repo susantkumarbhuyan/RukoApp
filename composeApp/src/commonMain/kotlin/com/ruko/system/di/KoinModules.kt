@@ -15,28 +15,28 @@ import com.ruko.system.presentation.screens.user.profile.UserProfileViewModel
 import com.ruko.system.presentation.screens.user.queue.JoinQViewModel
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.auth
-import dev.gitlive.firebase.database.database
+import dev.gitlive.firebase.functions.functions
 import dev.gitlive.firebase.firestore.firestore
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val koinModules = module {
     viewModel { AppViewModel(get()) }
-    viewModel { OwnerProfileViewModel(get()) }
+    viewModel { OwnerProfileViewModel(get(), get()) }
     viewModel { OwnerHomeViewModel(get(), get()) }
     viewModel { UserQueueViewModel(get()) }
     viewModel { OwnerQueueViewModel(get()) }
     viewModel { AuthViewModel(get(), get()) }
     viewModel { UserHomeViewModel(get(), get()) }
-    viewModel { UserProfileViewModel(get()) }
+    viewModel { UserProfileViewModel(get(), get()) }
     viewModel { JoinQViewModel(get(), get()) }
     viewModel { CurrentQueueViewModel(get(), get()) }
     viewModel { QueueHistoryViewModel() }
     single<QueueRepository> {
         QueueRepositoryImpl(
             Firebase.auth,
-            Firebase.database,
             Firebase.firestore,
+            Firebase.functions("asia-south1"),
             get()
         )
     }

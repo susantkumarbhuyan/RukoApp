@@ -62,15 +62,6 @@ class JoinQViewModel(
         _joining.value = true
         viewModelScope.launch {
             try {
-                val joinedQueueId = preferenceManager.getJoinedQueue()
-                if (joinedQueueId != null && repository.getUserQueuePosition(
-                        joinedQueueId, repository.currentUserId) > 0) {
-                    _state.value = JoinQueueState.Error(
-                        "You are already in a queue"
-                    )
-                    return@launch
-                }
-
                 val userId = repository.currentUserId.takeIf { it.isNotBlank() }
                     ?: throw IllegalStateException("Please sign in again")
 

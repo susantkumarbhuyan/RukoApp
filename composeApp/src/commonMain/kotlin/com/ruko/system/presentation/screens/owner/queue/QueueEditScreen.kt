@@ -127,6 +127,7 @@ fun QueueEditScreen(
                                 name = name,
                                 type = type,
                                 size = size.toIntOrNull() ?: 0,
+                                maxQueueSize = size.toIntOrNull() ?: 0,
                                 status = status.name,
                                 isActive = status == QueueStatus.ACTIVE,
                                 avgServiceTime = TimeUtils.minutesToMillis(
@@ -137,7 +138,7 @@ fun QueueEditScreen(
                         },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = name.isNotBlank() && (avgServiceTimeMin.toLongOrNull() ?: 0) in 1L..1440L &&
-                            (size.toIntOrNull() ?: 0) in 1..10000
+                            (size.toIntOrNull() ?: 0) in 1..200
                     ) {
                         Text("Save Changes")
                     }

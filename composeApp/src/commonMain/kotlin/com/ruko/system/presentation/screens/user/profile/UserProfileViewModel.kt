@@ -3,6 +3,7 @@ package com.ruko.system.presentation.screens.user.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ruko.system.data.local.preference.PreferenceManager
+import com.ruko.system.domain.repository.QueueRepository
 import com.ruko.system.domain.model.User
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +17,8 @@ sealed class UserProfileState {
 }
 
 class UserProfileViewModel(
-    private val preferenceManager: PreferenceManager
+    private val preferenceManager: PreferenceManager,
+    private val repository: QueueRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<UserProfileState>(UserProfileState.Loading)
@@ -38,6 +40,14 @@ class UserProfileViewModel(
             } catch (e: Exception) {
                 _state.value = UserProfileState.Error(e.message ?: "Unknown error")
             }
+        }
+    }
+
+    fun logout(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            try { repository.signOut(); onSuccess() }
+            catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) { _state.value = UserProfileState.Error(e.message ?: "Could not sign out") }
         }
     }
 
