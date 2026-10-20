@@ -10,11 +10,13 @@ service cloud.firestore {
     function queueMember(qid) {
       return signedIn() &&
         exists(/databases/$(database)/documents/activeMemberships/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/activeMemberships/$(request.auth.uid)).data.queueId == qid;
+        get(/databases/$(database)/documents/activeMemberships/$(request.auth.uid)).data.queueId == qid &&
+        get(/databases/$(database)/documents/activeMemberships/$(request.auth.uid)).data.active == true;
     }
     function customerOwner(uid) {
       return signedIn() &&
         exists(/databases/$(database)/documents/activeMemberships/$(uid)) &&
+        get(/databases/$(database)/documents/activeMemberships/$(uid)).data.active == true &&
         queueOwner(get(/databases/$(database)/documents/activeMemberships/$(uid)).data.queueId);
     }
     function validUser(uid) {
@@ -55,7 +57,9 @@ service cloud.firestore {
       allow read: if signedIn();
       allow write: if false;
       match /tickets/{ticketId} {
-        allow read: if queueOwner(qid) || queueMember(qid);
+        allow get: if queueOwner(qid) || queueMember(qid) ||
+          (signedIn() && resource.data.userId == request.auth.uid);
+        allow list: if queueOwner(qid) || queueMember(qid);
         allow write: if false;
       }
     }

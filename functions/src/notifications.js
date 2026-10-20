@@ -49,6 +49,10 @@ export function notificationWorker(db, messaging) {
       });
     }
     try {
+      if (now - job.createdAt > 24 * 60 * 60 * 1000) {
+        await finish({ status: "EXPIRED" });
+        return;
+      }
       // Don't send old waiting alerts to a customer who already left or completed.
       const membership = await db.doc("activeMemberships/" + job.uid).get();
       if (!["ARRIVED", "COMPLETED"].includes(job.kind) &&
@@ -66,9 +70,12 @@ export function notificationWorker(db, messaging) {
       const devices = await db.collection("pushDevices").where("uid", "==", job.uid)
         .where("updatedAt", ">=", now - 60 * 86400000).limit(20).get();
       if (devices.empty) { await finish({ status: "NO_DEVICES" }); return; }
+      const delivered = new Set(job.deliveredDeviceIds ?? []);
+      const targets = devices.docs.filter(doc => !delivered.has(doc.id));
+      if (targets.length === 0) { await finish({ status: "SENT", sentAt: now }); return; }
       const text = messageText(job);
       const collapse = digest(job.queueId + ":" + job.ticketId).slice(0, 32);
-      const tokens = devices.docs.map(doc => doc.data().token);
+      const tokens = targets.map(doc => doc.data().token);
       const response = await messaging.sendEachForMulticast({
         tokens, notification: text,
         data: { eventId: jobId, queueId: job.queueId, ticketId: job.ticketId,
@@ -82,18 +89,18 @@ export function notificationWorker(db, messaging) {
       let retry = false;
       for (let i = 0; i < response.responses.length; i++) {
         const item = response.responses[i];
-        if (item.success) continue;
+        if (item.success) { delivered.add(targets[i].id); continue; }
         if (invalidTokenCodes.has(item.error?.code)) {
           // Conditional delete: don't erase a device that was rebound meanwhile.
           await db.runTransaction(async tx => {
-            const doc = devices.docs[i];
+            const doc = targets[i];
             const current = await tx.get(doc.ref);
             if (current.data()?.uid === job.uid && current.data()?.token === tokens[i]) tx.delete(doc.ref);
           });
         } else retry = true;
       }
-      await finish(retry ? { status: "PENDING", nextAttemptAt: now + Math.min(3600000, 30000 * 2 ** job.attempts),
-        lastError: "Transient FCM delivery failure" } : { status: "SENT", sentAt: Date.now() });
+      await finish(retry ? { status: "PENDING", deliveredDeviceIds: [...delivered], nextAttemptAt: now + Math.min(3600000, 30000 * 2 ** job.attempts),
+        lastError: "Transient FCM delivery failure" } : { status: "SENT", deliveredDeviceIds: [...delivered], sentAt: Date.now() });
     } catch (error) {
       await finish({ status: "PENDING", nextAttemptAt: now + Math.min(3600000, 30000 * 2 ** job.attempts),
         lastError: String(error.code ?? "delivery-failed").slice(0, 100) });

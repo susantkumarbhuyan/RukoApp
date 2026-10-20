@@ -39,7 +39,7 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.work.manager)
-            implementation(platform("com.google.firebase:firebase-bom:33.15.0"))
+            implementation(project.dependencies.platform("com.google.firebase:firebase-bom:33.15.0"))
             implementation("com.google.firebase:firebase-appcheck-playintegrity")
             implementation("com.google.firebase:firebase-appcheck-debug")
         }

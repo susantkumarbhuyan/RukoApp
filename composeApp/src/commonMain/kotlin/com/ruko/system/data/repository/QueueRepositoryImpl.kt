@@ -20,6 +20,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -208,6 +209,13 @@ class QueueRepositoryImpl(
     override fun observeUserQueue(queueId: String): Flow<List<UserQueue>> =
         tickets(queueId).where { "status" equalTo "JOINED" }.orderBy("sequence").snapshots
             .map { snapshot -> snapshot.documents.map { it.data<UserQueue>() } }
+            .catch { error ->
+                if (error is CancellationException) throw error
+                val own = membership(currentUserId)
+                // Completion atomically revokes the former member's stream permission.
+                if (own != null && !own.active && own.queueId == queueId) emit(emptyList())
+                else throw error
+            }
 
     override fun observeUserQueueWithUserInfo(queueId: String): Flow<List<Pair<UserQueue, User?>>> =
         observeUserQueue(queueId).map { entries ->

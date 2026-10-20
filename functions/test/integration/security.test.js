@@ -57,3 +57,13 @@ test("profiles reject passwords, forged identities and self-verification", async
     businessType: "Salon", phoneNumber: "", address: "", isVerified: true
   }));
 });
+
+test("leaving revokes access to other customers and their queue stream", async () => {
+  await env.withSecurityRulesDisabled(async ctx => {
+    await setDoc(doc(ctx.firestore(), "activeMemberships/alice"),
+      { queueId: "securityQ", ticketId: "ticketA", active: false });
+  });
+  await assertFails(getDocs(collection(user("alice"), "queues/securityQ/tickets")));
+  await assertSucceeds(getDoc(doc(user("alice"), "queues/securityQ/tickets/ticketA")));
+  await assertFails(getDoc(doc(user("business"), "customers/alice")));
+});
