@@ -38,7 +38,7 @@ will always cost zero; review usage, set budget alerts, and keep the instance li
    APNs authentication key and enter its Key ID and Team ID. Keep the .p8 key private.
 5. Set your Apple team in `iosApp/Configuration/Config.xcconfig`; the app bundle ID
    now matches `GoogleService-Info.plist`. Use a physical iPhone for APNs testing.
-6. Resolve Xcode's Swift packages. Firebase iOS 11.8.0 matches the native version used
+6. Resolve Xcode's Swift packages. Kotlin and Xcode targets are aligned for ARM64 devices and simulators. Firebase iOS 11.8.0 matches the native version used
    by GitLive 2.3.0. CocoaPods integration was removed to retain the existing direct
    Kotlin/Xcode framework build; do not add a second Firebase installation method.
 
@@ -81,7 +81,7 @@ npm --prefix functions test
 npx firebase-tools@14.12.0 emulators:exec --project demo-ruko --only firestore,auth "npm --prefix functions run test:emulator"
 ./gradlew :composeApp:testDebugUnitTest :composeApp:assembleDebug
 xcodebuild -resolvePackageDependencies -project iosApp/iosApp.xcodeproj -scheme iosApp
-xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO ARCHS=arm64 build
 ```
 
 The emulator integration tests refuse to run without FIRESTORE_EMULATOR_HOST, and

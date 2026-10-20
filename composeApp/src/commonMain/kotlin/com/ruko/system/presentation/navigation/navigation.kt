@@ -157,7 +157,7 @@ fun NavGraphBuilder.ownerGraph(
                     navController.navigate(
                         Screen.Owner.QueueDetails(queueId)
                     ) {
-                        popUpTo(Screen.Owner.UpdateQueue) { inclusive = true }
+                        popUpTo<Screen.Owner.UpdateQueue>() { inclusive = true }
                         launchSingleTop = true
                     }
                 } else {
@@ -221,9 +221,6 @@ fun NavGraphBuilder.userGraph(
                 }
             )
         }
-        animatedComposable<Screen.User.Profile> {
-            FeatureScreen { navController.navigate(Screen.OnBoarding.Notification) }
-        }
         animatedComposable<Screen.User.QRScan> {
             QRScannerScreen(
                 onCodeScanned = { qrData ->
@@ -249,7 +246,7 @@ fun NavGraphBuilder.userGraph(
                 qrQueue = qrQueue,
                 onJoinComplete = { ->
                     navController.navigate(Screen.User.CurrentQueue(qrQueue.queueId)) {
-                        popUpTo(Screen.User.JoinQueue) { inclusive = true }
+                        popUpTo<Screen.User.JoinQueue>() { inclusive = true }
                         launchSingleTop = true
                     }
                 }
